@@ -23,9 +23,11 @@ glm::vec3 cameraPos = glm::vec3(0.5f, 1.0f, 3.0f); // 초기 카메라 위치
 glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f); // 카메라가 바라보는 점
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f); // 카메라 상단 방향
 
+glm::vec3 targetPosition = glm::vec3(0.0f, 0.0f, 0.0f); // 로봇의 중심점
+
 
 bool animateRotation = false; // 애니메이션 상태
-float cameraAngle = 0.0f;     // 공전 각도
+float cameraAngle = 0.0f;   // 카메라 자체 회전 각도
 
 bool isMovingX = false; // 아래 몸체의 이동 상태 (true: 이동, false: 정지)
 bool isMovingminusX = false;
@@ -210,7 +212,7 @@ public:
 };		//큐브 불러오는 클래스
 
 
-class Axis {		//축 불러오는 클래스
+class Axis {        // 축 불러오는 클래스
 public:
 	GLuint VAO, VBO;
 
@@ -220,18 +222,28 @@ public:
 
 	void InitBuffer() {
 		GLfloat axisVertices[] = {
+			// X축
 			-1.0f, 0.0f, 0.0f,
 			 0.0f, 0.0f, 0.0f,
 
 			 1.0f, 0.0f, 0.0f,
 			 0.0f, 0.0f, 0.0f,
 
-			 0.0f, -1.0f, 0.0f,
-			 0.0f, 0.0f, 0.0f,
+			 // Y축
+			  0.0f, -1.0f, 0.0f,
+			  0.0f, 0.0f, 0.0f,
 
-			 0.0f, 1.0f, 0.0f,
-			 0.0f, 0.0f, 0.0f
+			  0.0f, 1.0f, 0.0f,
+			  0.0f, 0.0f, 0.0f,
+
+			  // Z축
+			   0.0f, 0.0f, -1.0f,
+			   0.0f, 0.0f, 0.0f,
+
+			   0.0f, 0.0f, 1.0f,
+			   0.0f, 0.0f, 0.0f
 		};
+
 
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
@@ -251,10 +263,10 @@ public:
 
 	void Render() {
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_LINES, 0, 4);
+		glDrawArrays(GL_LINES, 0, 6);  // 총 6개의 라인 (각 축 2개의 포인트)
 		glBindVertexArray(0);
 	}
-};		//축 불러오는 클래스
+};        // 축 불러오는 클래스
 
 Cube* cube;
 Axis* axis;
@@ -357,6 +369,9 @@ void Render() {
 
 
 
+glm::vec3 cameraPosMinus = glm::vec3(-0.5f, -1.0f, -3.0f);
+
+
 int main(int argc, char** argv) {
 	srand(time(NULL));
 	glutInit(&argc, argv);
@@ -384,7 +399,7 @@ int main(int argc, char** argv) {
 
 void Keyboard(unsigned char key, int x, int y) {
 	const float moveSpeed = 0.1f;
-	const float rotateSpeed = 0.5f;
+	const float rotateSpeed = 1.0f;
 
 	switch (key) {
 	case 'z': // z축 양 방향 이동
@@ -399,27 +414,53 @@ void Keyboard(unsigned char key, int x, int y) {
 	case 'X': // x축 음 방향 이동
 		cameraPos.x -= moveSpeed;
 		break;
-	case 'y': // y축 기준 회전 (카메라 자체)
-		cameraAngle += glm::radians(rotateSpeed);
-		cameraPos = glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(cameraPos, 1.0f);
+
+	case 'y': // 카메라가 자기 자신을 기준으로 시계 방향 회전
+
+		cameraAngle += glm::radians(rotateSpeed); // 회전 각도를 증가
+		cameraTarget = glm::vec3(
+			glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(0.0f, 0.0f, -2.0f, 1.0f)
+		) + cameraPos + cameraPosMinus; // 새로운 바라보는 지점 계산
+
+		std::cout << "cameraPos: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
+		std::cout << "cameraTarget: (" << cameraTarget.x << ", " << cameraTarget.y << ", " << cameraTarget.z << ")" << std::endl;
 		break;
-	case 'Y': // y축 기준 반대 방향 회전
-		cameraAngle -= glm::radians(rotateSpeed);
-		cameraPos = glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(cameraPos, 1.0f);
+
+
+	case 'Y': // 카메라가 자기 자신을 기준으로 반시계 방향 회전
+		cameraAngle -= glm::radians(rotateSpeed); // 회전 각도를 감소
+		cameraTarget = glm::vec3(
+			glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(0.0f, 0.0f, -2.0f, 1.0f)
+		) + cameraPos + cameraPosMinus;; // 새로운 바라보는 지점 계산
+
+		std::cout << "cameraPos: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
+		std::cout << "cameraTarget: (" << cameraTarget.x << ", " << cameraTarget.y << ", " << cameraTarget.z << ")" << std::endl;
 		break;
 
 	case 'r': // y축 기준 공전 (화면 중심 기준 회전)
+		cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f); // 카메라가 바라보는 점
 		cameraAngle += glm::radians(rotateSpeed);
 		cameraPos = glm::vec3(
-			glm::rotate(glm::mat4(1.0f), glm::radians(rotateSpeed), cameraUp) * glm::vec4(cameraPos - cameraTarget, 1.0f)
+			glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(cameraPos - cameraTarget, 1.0f)
 		) + cameraTarget;
+
+		std::cout << "cameraPos: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
+		std::cout << "cameraTarget: (" << cameraTarget.x << ", " << cameraTarget.y << ", " << cameraTarget.z << ")" << std::endl;
+		break;
+
 		break;
 
 	case 'R': // y축 기준 공전 반대 방향
+		cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f); // 카메라가 바라보는 점
 		cameraAngle -= glm::radians(rotateSpeed);
 		cameraPos = glm::vec3(
-			glm::rotate(glm::mat4(1.0f), glm::radians(-rotateSpeed), cameraUp) * glm::vec4(cameraPos - cameraTarget, 1.0f)
+			glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(cameraPos - cameraTarget, 1.0f)
 		) + cameraTarget;
+
+		std::cout << "cameraPos: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
+		std::cout << "cameraTarget: (" << cameraTarget.x << ", " << cameraTarget.y << ", " << cameraTarget.z << ")" << std::endl;
+		break;
+
 		break;
 
 	case 'a': // 공전 애니메이션 시작/정지
