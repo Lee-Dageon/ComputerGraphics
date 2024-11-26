@@ -242,7 +242,7 @@ Axis* axis;
 Shader* shader;
 
 
-void drawRobot(Shader* shader) {
+void drawRobot(Shader* shader) { 
 	glm::mat4 model = glm::mat4(1.0f);
 	unsigned int modelLocation = glGetUniformLocation(shader->programID, "trans");
 
