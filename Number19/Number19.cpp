@@ -36,11 +36,13 @@ int moveDirection = 0; // 1: 양 방향, -1: 음 방향, 0: 정지
 bool isRotatingY = false; // 중앙 몸체의 회전 상태 (true: 회전 중, false: 정지)
 float centralRotationAngle = 0.0f; // 중앙 몸체의 현재 회전 각도
 float rotationSpeed = 5.0f; // 회전 속도 (1초당 5도)
-int centralRotationDirection = 0; // 중앙 몸체 회전 방향 (1: 양, -1: 음, 0: 정지)
+int centerRotationDirection = 0; // 회전 방향 (1: 양, -1: 음, 0: 정지)
 
-bool isRotatinggunbarrel = false; // 팔 회전 여부
-float gunbarrelRotationAngle = 0.0f; // 팔 회전 각도
-float gunbarrelRotationSpeed = 5.0f; // 팔 회전 속도 (1초당 5도)
+bool isRotatingGunBarrel = false; // 포신 회전 여부
+float gunBarrelRotationAngle1 = 0.0f; // 포신 1의 회전 각도
+float gunBarrelRotationAngle2 = 0.0f; // 포신 2의 회전 각도
+float gunBarrelRotationSpeed = 5.0f;  // 포신 회전 속도
+int gunBarrelRotationDirection = 0;
 
 void Keyboard(unsigned char key, int x, int y);
 void Update(int value);
@@ -289,6 +291,7 @@ void drawRobot(Shader* shader) {
 	// 5. 포신 1 (왼쪽)
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(-0.15f, -0.05f, 0.3f)); // 왼쪽 아래에서 앞쪽으로 뻗음
+	model = glm::rotate(model, gunBarrelRotationAngle1, glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 자전 반영
 	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.2f)); // 더듬이 크기 조정
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	cube->Render();
@@ -296,6 +299,7 @@ void drawRobot(Shader* shader) {
 	// 6. 포신 2 (오른쪽)
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(0.15f, -0.05f, 0.3f)); // 오른쪽 아래에서 앞쪽으로 뻗음
+	model = glm::rotate(model, gunBarrelRotationAngle2, glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 반대 방향 자전 반영
 	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.2f)); // 더듬이 크기 조정
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	cube->Render();
@@ -432,20 +436,35 @@ void Keyboard(unsigned char key, int x, int y) {
 
 	case 'm': // 양의 방향 회전
 		isRotatingY = true;
-		centralRotationDirection = 1; // 양의 방향
+		centerRotationDirection = 1; // 양의 방향
 		break;
 
 	case 'M': // 음의 방향 회전
 		isRotatingY = true;
-		centralRotationDirection = -1; // 음의 방향
+		centerRotationDirection = -1; // 음의 방향
 		break;
 
-	case 'f': // 양의 방향 회전
-		
+	case 'f': // 포신 양의 방향 회전 토글
+		if (isRotatingGunBarrel && gunBarrelRotationDirection == 1) {
+			isRotatingGunBarrel = false;  // 정지
+			gunBarrelRotationDirection = 0;
+		}
+		else {
+			isRotatingGunBarrel = true;   // 시작
+			gunBarrelRotationDirection = 1;
+		}
 		break;
 
-	case 'F': // 음의 방향 회전
-		
+
+	case 'F': // 포신 음의 방향 회전 토글
+		if (isRotatingGunBarrel && gunBarrelRotationDirection == -1) {
+			isRotatingGunBarrel = false;  // 정지
+			gunBarrelRotationDirection = 0;
+		}
+		else {
+			isRotatingGunBarrel = true;   // 시작
+			gunBarrelRotationDirection = -1;
+		}
 		break;
 
 
@@ -475,8 +494,8 @@ void Update(int value) {
 	}
 
 	// 중앙 몸체 회전 업데이트
-	if (isRotatingY && centralRotationDirection != 0) {
-		centralRotationAngle += glm::radians(rotationSpeed) * centralRotationDirection; // 방향에 따라 각도 변경
+	if (isRotatingY && centerRotationDirection != 0) {
+		centralRotationAngle += glm::radians(rotationSpeed) * centerRotationDirection; // 방향에 따라 각도 변경
 		if (centralRotationAngle > glm::radians(360.0f)) {
 			centralRotationAngle -= glm::radians(360.0f); // 360도 초과 시 초기화
 		}
@@ -485,6 +504,28 @@ void Update(int value) {
 		}
 		glutPostRedisplay();
 	}
+
+	// 포신 회전 업데이트
+	if (isRotatingGunBarrel && gunBarrelRotationDirection != 0) {
+		gunBarrelRotationAngle1 += glm::radians(gunBarrelRotationSpeed) * gunBarrelRotationDirection; // 포신 1 회전
+		gunBarrelRotationAngle2 += glm::radians(gunBarrelRotationSpeed) * gunBarrelRotationDirection; // 포신 2 회전
+
+		// 각도를 360도로 제한
+		if (gunBarrelRotationAngle1 > glm::radians(360.0f)) {
+			gunBarrelRotationAngle1 -= glm::radians(360.0f);
+		}
+		if (gunBarrelRotationAngle2 > glm::radians(360.0f)) {
+			gunBarrelRotationAngle2 -= glm::radians(360.0f);
+		}
+		if (gunBarrelRotationAngle1 < glm::radians(-360.0f)) {
+			gunBarrelRotationAngle1 += glm::radians(360.0f);
+		}
+		if (gunBarrelRotationAngle2 < glm::radians(-360.0f)) {
+			gunBarrelRotationAngle2 += glm::radians(360.0f);
+		}
+		glutPostRedisplay();
+	}
+
 
 	glutTimerFunc(16, Update, 0); // 60FPS 기준
 }
