@@ -1,0 +1,6 @@
+﻿  Number13.cpp
+C:\ComputerGraphics\3D\3D\3D\Number13.cpp(75,6): warning C4326: 'main'의 반환 형식이 'int'이어야 하는데 'void'입니다.
+C:\ComputerGraphics\3D\3D\3D\Number13.cpp(78,15): warning C4244: '인수': 'time_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  3D.vcxproj -> C:\ComputerGraphics\3D\3D\x64\Debug\3D.exe
+  'pwsh.exe' is not recognized as an internal or external command,
+  operable program or batch file.

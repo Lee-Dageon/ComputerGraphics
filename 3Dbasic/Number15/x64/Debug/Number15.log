@@ -1,0 +1,11 @@
+﻿  Number15.cpp
+C:\ComputerGraphics\3D\3D\Number15\Number15.cpp(165,44): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\ComputerGraphics\3D\3D\Number15\Number15.cpp(280,44): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\ComputerGraphics\3D\3D\Number15\Number15.cpp(385,44): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\ComputerGraphics\3D\3D\Number15\Number15.cpp(546,44): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\ComputerGraphics\3D\3D\Number15\Number15.cpp(750,12): warning C4244: '인수': 'time_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\ComputerGraphics\3D\3D\Number15\Number15.cpp(817,3): warning C4804: '*=': 연산에 'bool' 형식을 사용하는 것은 안전하지 않습니다.
+C:\ComputerGraphics\3D\3D\Number15\Number15.cpp(822,3): warning C4804: '*=': 연산에 'bool' 형식을 사용하는 것은 안전하지 않습니다.
+  Number15.vcxproj -> C:\ComputerGraphics\3D\3D\x64\Debug\Number15.exe
+  'pwsh.exe' is not recognized as an internal or external command,
+  operable program or batch file.

@@ -1,0 +1,122 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\ComputerGraphics\\3D\\3D\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{1973ABF0-F85D-483B-A138-03B64D5571BD}|Number14\\Number14.vcxproj|C:\\ComputerGraphics\\3D\\3D\\Number14\\Number14.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{1973ABF0-F85D-483B-A138-03B64D5571BD}|Number14\\Number14.vcxproj|solutionrelative:Number14\\Number14.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{630AF657-C1EB-40E8-A9DC-660590EA1AA7}|Number15\\Number15.vcxproj|C:\\ComputerGraphics\\3D\\3D\\Number15\\Number15.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{630AF657-C1EB-40E8-A9DC-660590EA1AA7}|Number15\\Number15.vcxproj|solutionrelative:Number15\\Number15.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CC6580B8-3E17-4577-B5C7-A45966BE796C}|Number16\\Number16.vcxproj|C:\\ComputerGraphics\\3D\\3D\\Number16\\Number16.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{CC6580B8-3E17-4577-B5C7-A45966BE796C}|Number16\\Number16.vcxproj|solutionrelative:Number16\\Number16.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\ComputerGraphics\\3D\\3D\\3D\\fragment.glsl||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:3D\\fragment.glsl||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\ComputerGraphics\\3D\\3D\\3D\\vertex.glsl||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:3D\\vertex.glsl||{8B382828-6202-11D1-8870-0000F87579D2}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "vertex.glsl",
+              "DocumentMoniker": "C:\\ComputerGraphics\\3D\\3D\\3D\\vertex.glsl",
+              "RelativeDocumentMoniker": "3D\\vertex.glsl",
+              "ToolTip": "C:\\ComputerGraphics\\3D\\3D\\3D\\vertex.glsl",
+              "RelativeToolTip": "3D\\vertex.glsl",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-10-24T06:03:53.549Z",
+              "IsPinned": true
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Number14.cpp",
+              "DocumentMoniker": "C:\\ComputerGraphics\\3D\\3D\\Number14\\Number14.cpp",
+              "RelativeDocumentMoniker": "Number14\\Number14.cpp",
+              "ToolTip": "C:\\ComputerGraphics\\3D\\3D\\Number14\\Number14.cpp",
+              "RelativeToolTip": "Number14\\Number14.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-11-25T03:26:49.772Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{eefa5220-e298-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Number15.cpp",
+              "DocumentMoniker": "C:\\ComputerGraphics\\3D\\3D\\Number15\\Number15.cpp",
+              "RelativeDocumentMoniker": "Number15\\Number15.cpp",
+              "ToolTip": "C:\\ComputerGraphics\\3D\\3D\\Number15\\Number15.cpp",
+              "RelativeToolTip": "Number15\\Number15.cpp",
+              "ViewState": "AgIAANgBAAAAAAAAAAAAAN4BAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-11-13T00:12:54.258Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Number16.cpp",
+              "DocumentMoniker": "C:\\ComputerGraphics\\3D\\3D\\Number16\\Number16.cpp",
+              "RelativeDocumentMoniker": "Number16\\Number16.cpp",
+              "ToolTip": "C:\\ComputerGraphics\\3D\\3D\\Number16\\Number16.cpp",
+              "RelativeToolTip": "Number16\\Number16.cpp",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAkwMoBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-11-12T08:25:10.433Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "fragment.glsl",
+              "DocumentMoniker": "C:\\ComputerGraphics\\3D\\3D\\3D\\fragment.glsl",
+              "RelativeDocumentMoniker": "3D\\fragment.glsl",
+              "ToolTip": "C:\\ComputerGraphics\\3D\\3D\\3D\\fragment.glsl",
+              "RelativeToolTip": "3D\\fragment.glsl",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-10-24T06:03:52.265Z"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 1299,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
