@@ -49,6 +49,12 @@ bool isReturning = false;   // 포신 원래 자리로 이동 중 상태
 float gunBarrelMergeOffset = 0.0f; // 포신 이동 거리
 float mergeSpeed = 0.01f;   // 이동 속도
 
+bool isCraneRotating = false;    // 크레인 팔 회전 상태
+float craneArmAngle1 = 0.0f;     // 팔 1의 현재 각도
+float craneArmAngle2 = 0.0f;     // 팔 2의 현재 각도
+float craneRotationSpeed = 0.5f; // 팔 회전 속도
+int craneRotationDirection = 0;  // 회전 방향 (1: 양, -1: 음, 0: 정지)
+
 void Keyboard(unsigned char key, int x, int y);
 void Update(int value);
 
@@ -278,6 +284,7 @@ void drawRobot(Shader* shader) {
 	// 3. 팔 1 (왼쪽)
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(bodyXPosition, 0.0f, 0.0f)); // X축 이동 반영
+	model = glm::rotate(model, glm::radians(craneArmAngle1), glm::vec3(0.0f, 0.0f, 1.0f)); // Z축 회전 반영
 	model = glm::rotate(model, centralRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f)); // 중앙 몸체와 동일한 회전
 	model = glm::translate(model, glm::vec3(-0.1f, 0.3f, 0.0f)); // 왼쪽으로 약간 이동 후 위로 올림
 	model = glm::scale(model, glm::vec3(0.05f, 0.2f, 0.05f)); // 더듬이 크기 축소
@@ -287,6 +294,7 @@ void drawRobot(Shader* shader) {
 	// 4. 팔 2 (오른쪽)
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(bodyXPosition, 0.0f, 0.0f)); // X축 이동 반영
+	model = glm::rotate(model, glm::radians(craneArmAngle2), glm::vec3(0.0f, 0.0f, 1.0f)); // Z축 회전 반영
 	model = glm::rotate(model, centralRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 회전 반영
 	model = glm::translate(model, glm::vec3(0.1f, 0.3f, 0.0f)); // 오른쪽으로 약간 이동 후 위로 올림
 	model = glm::scale(model, glm::vec3(0.05f, 0.2f, 0.05f)); // 더듬이 크기 축소
@@ -485,6 +493,29 @@ void Keyboard(unsigned char key, int x, int y) {
 		}
 		break;
 
+	case 't': // 양의 방향 회전 토글
+		if (isCraneRotating && craneRotationDirection == 1) {
+			isCraneRotating = false;  // 정지
+			craneRotationDirection = 0;
+		}
+		else {
+			isCraneRotating = true;   // 시작
+			craneRotationDirection = 1; // 양의 방향
+		}
+		break;
+
+	case 'T': // 음의 방향 회전 토글
+		if (isCraneRotating && craneRotationDirection == -1) {
+			isCraneRotating = false;  // 정지
+			craneRotationDirection = 0;
+		}
+		else {
+			isCraneRotating = true;   // 시작
+			craneRotationDirection = -1; // 음의 방향
+		}
+		break;
+
+
 
 
 	default:
@@ -563,6 +594,21 @@ void Update(int value) {
 		}
 		glutPostRedisplay();
 	}
+
+	// 크레인 팔 회전 업데이트
+	if (isCraneRotating && craneRotationDirection != 0) {
+		craneArmAngle1 += craneRotationSpeed * craneRotationDirection;  // 팔 1 회전
+		craneArmAngle2 -= craneRotationSpeed * craneRotationDirection;  // 팔 2 반대 방향 회전
+
+		// 각도를 -90 ~ 90도 사이로 제한
+		if (craneArmAngle1 > 90.0f) craneArmAngle1 = 90.0f;
+		if (craneArmAngle1 < -90.0f) craneArmAngle1 = -90.0f;
+		if (craneArmAngle2 > 90.0f) craneArmAngle2 = 90.0f;
+		if (craneArmAngle2 < -90.0f) craneArmAngle2 = -90.0f;
+
+		glutPostRedisplay();
+	}
+
 
 
 	glutTimerFunc(16, Update, 0); // 60FPS 기준
