@@ -19,6 +19,8 @@ GLfloat howmuchrotationX = -30.0f;
 GLfloat howmuchrotationY = 30.0f;
 
 
+
+
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f); // 초기 카메라 위치
 glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f); // 카메라가 바라보는 점
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f); // 카메라 상단 방향
