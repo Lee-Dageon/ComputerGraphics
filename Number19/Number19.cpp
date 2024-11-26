@@ -19,8 +19,6 @@ GLfloat howmuchrotationX = -30.0f;
 GLfloat howmuchrotationY = 30.0f;
 
 
-
-
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f); // 초기 카메라 위치
 glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f); // 카메라가 바라보는 점
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f); // 카메라 상단 방향
@@ -34,9 +32,11 @@ bool isMovingminusX = false;
 float bodyXPosition = 0.0f; // 아래 몸체의 현재 X축 위치
 float moveSpeed = 0.01f; // 이동 속도
 int moveDirection = 0; // 1: 양 방향, -1: 음 방향, 0: 정지
+
 bool isRotatingY = false; // 중앙 몸체의 회전 상태 (true: 회전 중, false: 정지)
 float centralRotationAngle = 0.0f; // 중앙 몸체의 현재 회전 각도
 float rotationSpeed = 5.0f; // 회전 속도 (1초당 5도)
+int centralRotationDirection = 0; // 중앙 몸체 회전 방향 (1: 양, -1: 음, 0: 정지)
 
 void Keyboard(unsigned char key, int x, int y);
 void Update(int value);
@@ -248,16 +248,17 @@ void drawRobot(Shader* shader) {
 	glm::mat4 model = glm::mat4(1.0f);
 	unsigned int modelLocation = glGetUniformLocation(shader->programID, "trans");
 
-	// 1. 몸통 (기본 큐브 크기 그대로 렌더링)
+	// 1. 아래 몸체 (기본 큐브 크기 그대로 렌더링)
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(bodyXPosition, 0.0f, 0.0f)); // X축 이동 반영
 	model = glm::scale(model, glm::vec3(0.5f, 0.3f, 0.5f)); // 크기 조정
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	cube->Render();
 
-	// 2. 머리 (몸통 위에 위치한 작은 큐브)
+	// 2. 중앙 몸체 (몸통 위에 위치한 작은 큐브)
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(bodyXPosition, 0.0f, 0.0f)); // X축 이동 반영
+	model = glm::rotate(model, centralRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 회전 반영
 	model = glm::translate(model, glm::vec3(0.0f, 0.2f, 0.0f)); // Y축으로 올림
 	model = glm::scale(model, glm::vec3(0.3f, 0.1f, 0.3f)); // 크기 축소
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
@@ -266,6 +267,7 @@ void drawRobot(Shader* shader) {
 	// 3. 팔 1 (왼쪽)
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(bodyXPosition, 0.0f, 0.0f)); // X축 이동 반영
+	model = glm::rotate(model, centralRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f)); // 중앙 몸체와 동일한 회전
 	model = glm::translate(model, glm::vec3(-0.1f, 0.3f, 0.0f)); // 왼쪽으로 약간 이동 후 위로 올림
 	model = glm::scale(model, glm::vec3(0.05f, 0.2f, 0.05f)); // 더듬이 크기 축소
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
@@ -274,19 +276,20 @@ void drawRobot(Shader* shader) {
 	// 4. 팔 2 (오른쪽)
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(bodyXPosition, 0.0f, 0.0f)); // X축 이동 반영
+	model = glm::rotate(model, centralRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 회전 반영
 	model = glm::translate(model, glm::vec3(0.1f, 0.3f, 0.0f)); // 오른쪽으로 약간 이동 후 위로 올림
 	model = glm::scale(model, glm::vec3(0.05f, 0.2f, 0.05f)); // 더듬이 크기 축소
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	cube->Render();
 
-	// 5. 몸체 앞 더듬이 1 (왼쪽)
+	// 5. 포신 1 (왼쪽)
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(-0.15f, -0.05f, 0.3f)); // 왼쪽 아래에서 앞쪽으로 뻗음
 	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.2f)); // 더듬이 크기 조정
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	cube->Render();
 
-	// 6. 몸체 앞 더듬이 2 (오른쪽)
+	// 6. 포신 2 (오른쪽)
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(0.15f, -0.05f, 0.3f)); // 오른쪽 아래에서 앞쪽으로 뻗음
 	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.2f)); // 더듬이 크기 조정
@@ -417,6 +420,17 @@ void Keyboard(unsigned char key, int x, int y) {
 		else moveDirection = -1; // 음 방향 이동
 		break;
 
+	case 'm': // 양의 방향 회전
+		isRotatingY = true;
+		centralRotationDirection = 1; // 양의 방향
+		break;
+
+	case 'M': // 음의 방향 회전
+		isRotatingY = true;
+		centralRotationDirection = -1; // 음의 방향
+		break;
+
+
 
 	default:
 		break;
@@ -432,15 +446,25 @@ void Update(int value) {
 		cameraPos = glm::vec3(
 			glm::rotate(glm::mat4(1.0f), glm::radians(1.0f), cameraUp) * glm::vec4(cameraPos - cameraTarget, 1.0f)
 		) + cameraTarget;
-		glutPostRedisplay(); // 화면 갱신 요청
 	}
 
 	// 이동 방향에 따라 아래 몸체 위치 업데이트
 	if (moveDirection != 0) {
 		bodyXPosition += moveDirection * moveSpeed; // 이동 방향(1 또는 -1) 곱하기 속도
-		glutPostRedisplay();
 	}
 
+	// 중앙 몸체 회전 업데이트
+	if (isRotatingY && centralRotationDirection != 0) {
+		centralRotationAngle += glm::radians(rotationSpeed) * centralRotationDirection; // 방향에 따라 각도 변경
+		if (centralRotationAngle > glm::radians(360.0f)) {
+			centralRotationAngle -= glm::radians(360.0f); // 360도 초과 시 초기화
+		}
+		if (centralRotationAngle < glm::radians(-360.0f)) {
+			centralRotationAngle += glm::radians(360.0f); // -360도 초과 시 초기화
+		}
+	}
+
+	glutPostRedisplay();
 	glutTimerFunc(16, Update, 0); // 60FPS 기준
 }
 
