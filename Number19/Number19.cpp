@@ -508,7 +508,7 @@ void Update(int value) {
 	// 포신 회전 업데이트
 	if (isRotatingGunBarrel && gunBarrelRotationDirection != 0) {
 		gunBarrelRotationAngle1 += glm::radians(gunBarrelRotationSpeed) * gunBarrelRotationDirection; // 포신 1 회전
-		gunBarrelRotationAngle2 += glm::radians(gunBarrelRotationSpeed) * gunBarrelRotationDirection; // 포신 2 회전
+		gunBarrelRotationAngle2 += glm::radians(gunBarrelRotationSpeed) * -gunBarrelRotationDirection; // 포신 2 회전
 
 		// 각도를 360도로 제한
 		if (gunBarrelRotationAngle1 > glm::radians(360.0f)) {
