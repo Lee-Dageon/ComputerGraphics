@@ -19,7 +19,7 @@ GLfloat howmuchrotationX = -30.0f;
 GLfloat howmuchrotationY = 30.0f;
 
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f); // 초기 카메라 위치
+glm::vec3 cameraPos = glm::vec3(0.5f, 1.0f, 3.0f); // 초기 카메라 위치
 glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f); // 카메라가 바라보는 점
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f); // 카메라 상단 방향
 
@@ -44,6 +44,11 @@ float gunBarrelRotationAngle2 = 0.0f; // 포신 2의 회전 각도
 float gunBarrelRotationSpeed = 5.0f;  // 포신 회전 속도
 int gunBarrelRotationDirection = 0;
 
+bool isMerging = false;     // 포신 중앙으로 이동 중 상태
+bool isReturning = false;   // 포신 원래 자리로 이동 중 상태
+float gunBarrelMergeOffset = 0.0f; // 포신 이동 거리
+float mergeSpeed = 0.01f;   // 이동 속도
+
 void Keyboard(unsigned char key, int x, int y);
 void Update(int value);
 
@@ -55,7 +60,7 @@ class Shader {		//셰이더 불러오는 클래스
 public:
 	GLuint programID;
 
-	Shader(const char* vertexFilePath, const char* fragmentFilePath) {
+	Shader(const char* vertexFilePath, const char* fragmentFilePath) {                                                                                                                                                                      
 		GLuint vertexShader = CompileShader(vertexFilePath, GL_VERTEX_SHADER);
 		GLuint fragmentShader = CompileShader(fragmentFilePath, GL_FRAGMENT_SHADER);
 		CreateProgram(vertexShader, fragmentShader);
@@ -290,7 +295,7 @@ void drawRobot(Shader* shader) {
 
 	// 5. 포신 1 (왼쪽)
 	model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(-0.15f, -0.05f, 0.3f)); // 왼쪽 아래에서 앞쪽으로 뻗음
+	model = glm::translate(model, glm::vec3(-0.15f + gunBarrelMergeOffset, -0.05f, 0.3f)); // 왼쪽 아래에서 앞쪽으로 뻗음
 	model = glm::rotate(model, gunBarrelRotationAngle1, glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 자전 반영
 	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.2f)); // 더듬이 크기 조정
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
@@ -298,7 +303,7 @@ void drawRobot(Shader* shader) {
 
 	// 6. 포신 2 (오른쪽)
 	model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.15f, -0.05f, 0.3f)); // 오른쪽 아래에서 앞쪽으로 뻗음
+	model = glm::translate(model, glm::vec3(0.15f - gunBarrelMergeOffset, -0.05f, 0.3f)); // 오른쪽 아래에서 앞쪽으로 뻗음
 	model = glm::rotate(model, gunBarrelRotationAngle2, glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 반대 방향 자전 반영
 	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.2f)); // 더듬이 크기 조정
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
@@ -468,6 +473,19 @@ void Keyboard(unsigned char key, int x, int y) {
 		break;
 
 
+	case 'e': // 포신 중앙으로 이동 시작
+		if (!isMerging && !isReturning) {
+			isMerging = true;  // 중앙으로 이동 시작
+		}
+		break;
+
+	case 'E': // 포신 원래 자리로 이동 시작
+		if (!isMerging && !isReturning) {
+			isReturning = true; // 원래 자리로 이동 시작
+		}
+		break;
+
+
 
 	default:
 		break;
@@ -522,6 +540,26 @@ void Update(int value) {
 		}
 		if (gunBarrelRotationAngle2 < glm::radians(-360.0f)) {
 			gunBarrelRotationAngle2 += glm::radians(360.0f);
+		}
+		glutPostRedisplay();
+	}
+
+
+	// 포신 이동 애니메이션
+	if (isMerging) {
+		gunBarrelMergeOffset += mergeSpeed; // 중앙으로 이동
+		if (gunBarrelMergeOffset >= 0.15f) { // 중앙 도달
+			gunBarrelMergeOffset = 0.15f;   // 중앙에서 멈춤
+			isMerging = false;
+		}
+		glutPostRedisplay();
+	}
+
+	if (isReturning) {
+		gunBarrelMergeOffset -= mergeSpeed; // 원래 자리로 이동
+		if (gunBarrelMergeOffset <= 0.0f) { // 원래 자리 도달
+			gunBarrelMergeOffset = 0.0f;   // 이동 종료
+			isReturning = false;
 		}
 		glutPostRedisplay();
 	}
