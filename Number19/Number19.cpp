@@ -38,6 +38,10 @@ float centralRotationAngle = 0.0f; // 중앙 몸체의 현재 회전 각도
 float rotationSpeed = 5.0f; // 회전 속도 (1초당 5도)
 int centralRotationDirection = 0; // 중앙 몸체 회전 방향 (1: 양, -1: 음, 0: 정지)
 
+bool isRotatinggunbarrel = false; // 팔 회전 여부
+float gunbarrelRotationAngle = 0.0f; // 팔 회전 각도
+float gunbarrelRotationSpeed = 5.0f; // 팔 회전 속도 (1초당 5도)
+
 void Keyboard(unsigned char key, int x, int y);
 void Update(int value);
 
@@ -363,7 +367,7 @@ int main(int argc, char** argv) {
 
 void Keyboard(unsigned char key, int x, int y) {
 	const float moveSpeed = 0.1f;
-	const float rotateSpeed = 5.0f;
+	const float rotateSpeed = 0.5f;
 
 	switch (key) {
 	case 'z': // z축 양 방향 이동
@@ -386,21 +390,27 @@ void Keyboard(unsigned char key, int x, int y) {
 		cameraAngle -= glm::radians(rotateSpeed);
 		cameraPos = glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(cameraPos, 1.0f);
 		break;
+
 	case 'r': // y축 기준 공전 (화면 중심 기준 회전)
 		cameraAngle += glm::radians(rotateSpeed);
 		cameraPos = glm::vec3(
 			glm::rotate(glm::mat4(1.0f), glm::radians(rotateSpeed), cameraUp) * glm::vec4(cameraPos - cameraTarget, 1.0f)
 		) + cameraTarget;
 		break;
+
 	case 'R': // y축 기준 공전 반대 방향
 		cameraAngle -= glm::radians(rotateSpeed);
 		cameraPos = glm::vec3(
 			glm::rotate(glm::mat4(1.0f), glm::radians(-rotateSpeed), cameraUp) * glm::vec4(cameraPos - cameraTarget, 1.0f)
 		) + cameraTarget;
 		break;
+
 	case 'a': // 공전 애니메이션 시작/정지
+		animateRotation = true;
+		break;
+
 	case 'A':
-		animateRotation = !animateRotation;
+		animateRotation = false;
 		break;
 
 	case '+': // z축 양 방향 이동
@@ -430,6 +440,14 @@ void Keyboard(unsigned char key, int x, int y) {
 		centralRotationDirection = -1; // 음의 방향
 		break;
 
+	case 'f': // 양의 방향 회전
+		
+		break;
+
+	case 'F': // 음의 방향 회전
+		
+		break;
+
 
 
 	default:
@@ -441,16 +459,19 @@ void Keyboard(unsigned char key, int x, int y) {
 
 
 void Update(int value) {
+
 	if (animateRotation) {
 		cameraAngle += glm::radians(1.0f); // 애니메이션 속도
 		cameraPos = glm::vec3(
 			glm::rotate(glm::mat4(1.0f), glm::radians(1.0f), cameraUp) * glm::vec4(cameraPos - cameraTarget, 1.0f)
 		) + cameraTarget;
+		glutPostRedisplay();
 	}
 
 	// 이동 방향에 따라 아래 몸체 위치 업데이트
 	if (moveDirection != 0) {
 		bodyXPosition += moveDirection * moveSpeed; // 이동 방향(1 또는 -1) 곱하기 속도
+		glutPostRedisplay();
 	}
 
 	// 중앙 몸체 회전 업데이트
@@ -462,9 +483,9 @@ void Update(int value) {
 		if (centralRotationAngle < glm::radians(-360.0f)) {
 			centralRotationAngle += glm::radians(360.0f); // -360도 초과 시 초기화
 		}
+		glutPostRedisplay();
 	}
 
-	glutPostRedisplay();
 	glutTimerFunc(16, Update, 0); // 60FPS 기준
 }
 
