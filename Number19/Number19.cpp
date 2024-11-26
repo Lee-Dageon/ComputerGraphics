@@ -368,10 +368,6 @@ void Render() {
 }
 
 
-
-glm::vec3 cameraPosMinus = glm::vec3(-0.5f, -1.0f, -3.0f);
-
-
 int main(int argc, char** argv) {
 	srand(time(NULL));
 	glutInit(&argc, argv);
@@ -419,8 +415,8 @@ void Keyboard(unsigned char key, int x, int y) {
 
 		cameraAngle += glm::radians(rotateSpeed); // 회전 각도를 증가
 		cameraTarget = glm::vec3(
-			glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(0.0f, 0.0f, -2.0f, 1.0f)
-		) + cameraPos + cameraPosMinus; // 새로운 바라보는 지점 계산
+			glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(0.0f, 0.0f, -1.0f, 1.0f)
+		) + cameraPos; // 새로운 바라보는 지점 계산
 
 		std::cout << "cameraPos: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
 		std::cout << "cameraTarget: (" << cameraTarget.x << ", " << cameraTarget.y << ", " << cameraTarget.z << ")" << std::endl;
@@ -430,8 +426,8 @@ void Keyboard(unsigned char key, int x, int y) {
 	case 'Y': // 카메라가 자기 자신을 기준으로 반시계 방향 회전
 		cameraAngle -= glm::radians(rotateSpeed); // 회전 각도를 감소
 		cameraTarget = glm::vec3(
-			glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(0.0f, 0.0f, -2.0f, 1.0f)
-		) + cameraPos + cameraPosMinus;; // 새로운 바라보는 지점 계산
+			glm::rotate(glm::mat4(1.0f), cameraAngle, cameraUp) * glm::vec4(0.0f, 0.0f, -1.0f, 1.0f)
+		) + cameraPos; // 새로운 바라보는 지점 계산
 
 		std::cout << "cameraPos: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
 		std::cout << "cameraTarget: (" << cameraTarget.x << ", " << cameraTarget.y << ", " << cameraTarget.z << ")" << std::endl;
@@ -448,8 +444,6 @@ void Keyboard(unsigned char key, int x, int y) {
 		std::cout << "cameraTarget: (" << cameraTarget.x << ", " << cameraTarget.y << ", " << cameraTarget.z << ")" << std::endl;
 		break;
 
-		break;
-
 	case 'R': // y축 기준 공전 반대 방향
 		cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f); // 카메라가 바라보는 점
 		cameraAngle -= glm::radians(rotateSpeed);
@@ -459,8 +453,6 @@ void Keyboard(unsigned char key, int x, int y) {
 
 		std::cout << "cameraPos: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
 		std::cout << "cameraTarget: (" << cameraTarget.x << ", " << cameraTarget.y << ", " << cameraTarget.z << ")" << std::endl;
-		break;
-
 		break;
 
 	case 'a': // 공전 애니메이션 시작/정지
@@ -488,15 +480,28 @@ void Keyboard(unsigned char key, int x, int y) {
 		else moveDirection = -1; // 음 방향 이동
 		break;
 
-	case 'm': // 양의 방향 회전
-		isRotatingY = true;
-		centerRotationDirection = 1; // 양의 방향
+	case 'm': // 중앙 몸체 양의 방향 회전 토글
+		if (isRotatingY && centerRotationDirection == 1) {
+			isRotatingY = false;  // 회전 멈춤
+			centerRotationDirection = 0;
+		}
+		else {
+			isRotatingY = true;   // 회전 시작
+			centerRotationDirection = 1; // 양의 방향
+		}
 		break;
 
-	case 'M': // 음의 방향 회전
-		isRotatingY = true;
-		centerRotationDirection = -1; // 음의 방향
+	case 'M': // 중앙 몸체 음의 방향 회전 토글
+		if (isRotatingY && centerRotationDirection == -1) {
+			isRotatingY = false;  // 회전 멈춤
+			centerRotationDirection = 0;
+		}
+		else {
+			isRotatingY = true;   // 회전 시작
+			centerRotationDirection = -1; // 음의 방향
+		}
 		break;
+
 
 	case 'f': // 포신 양의 방향 회전 토글
 		if (isRotatingGunBarrel && gunBarrelRotationDirection == 1) {
@@ -556,6 +561,54 @@ void Keyboard(unsigned char key, int x, int y) {
 		}
 		break;
 
+	case 's': // 모든 움직임 멈추기
+	case 'S':
+		animateRotation = false; // 공전 애니메이션 정지
+		isMovingX = false;       // X축 이동 정지
+		isRotatingY = false;     // 중앙 몸체 회전 정지
+		isRotatingGunBarrel = false; // 포신 회전 정지
+		isMerging = false;       // 포신 병합 정지
+		isReturning = false;     // 포신 복귀 정지
+		isCraneRotating = false; // 크레인 팔 회전 정지
+		moveDirection = 0;       // 이동 방향 초기화
+		centerRotationDirection = 0; // 중앙 회전 방향 초기화
+		gunBarrelRotationDirection = 0; // 포신 회전 방향 초기화
+		craneRotationDirection = 0; // 크레인 회전 방향 초기화
+		break;
+
+	case 'c': // 모든 움직임 초기화
+	case 'C':
+		animateRotation = false;
+		isMovingX = false;
+		isRotatingY = false;
+		isRotatingGunBarrel = false;
+		isMerging = false;
+		isReturning = false;
+		isCraneRotating = false;
+
+		// 상태 초기화
+		cameraPos = glm::vec3(0.5f, 1.0f, 3.0f);
+		cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+		bodyXPosition = 0.0f;
+		centralRotationAngle = 0.0f;
+		gunBarrelRotationAngle1 = 0.0f;
+		gunBarrelRotationAngle2 = 0.0f;
+		gunBarrelMergeOffset = 0.0f;
+		craneArmAngle1 = 0.0f;
+		craneArmAngle2 = 0.0f;
+
+		moveDirection = 0;
+		centerRotationDirection = 0;
+		gunBarrelRotationDirection = 0;
+		craneRotationDirection = 0;
+
+		std::cout << "All movements reset to initial state." << std::endl;
+		break;
+
+	case 'q': // 프로그램 종료
+	case 'Q':
+		exit(0); // 프로그램 종료
+		break;
 
 
 
