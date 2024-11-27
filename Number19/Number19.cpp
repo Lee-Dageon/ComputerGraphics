@@ -268,9 +268,62 @@ public:
 	}
 };        // 축 불러오는 클래스
 
+GLfloat floorVertices[] = {
+	// Vertex positions       // Colors
+	-5.0f, 0.0f, -5.0f,       0.5f, 0.5f, 0.5f, // Bottom-left (Gray)
+	 5.0f, 0.0f, -5.0f,       0.5f, 0.5f, 0.5f, // Bottom-right
+	 5.0f, 0.0f,  5.0f,       0.5f, 0.5f, 0.5f, // Top-right
+	-5.0f, 0.0f,  5.0f,       0.5f, 0.5f, 0.5f  // Top-left
+};
+
+GLuint floorIndices[] = {
+	0, 1, 2, // First triangle
+	0, 2, 3  // Second triangle
+};
+
+class Floor {
+public:
+	GLuint VAO, VBO, EBO;
+
+	Floor() {
+		InitBuffer();
+	}
+
+	void InitBuffer() {
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glGenBuffers(1, &EBO);
+
+		glBindVertexArray(VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(floorVertices), floorVertices, GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(floorIndices), floorIndices, GL_STATIC_DRAW);
+
+		glBindVertexArray(0);
+	}
+
+	void Render() {
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+};
+
+
 Cube* cube;
 Axis* axis;
 Shader* shader;
+Floor* floorPlane;
+
 
 
 void drawRobot(Shader* shader) { 
@@ -364,6 +417,13 @@ void Render() {
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	drawRobot(shader);
 
+	// 바닥 렌더링
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, -0.11f, 0.0f)); // y = -1.0으로 이동
+	model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f)); // 크기 조정
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+	floorPlane->Render();
+
 	glutSwapBuffers();
 }
 
@@ -381,6 +441,7 @@ int main(int argc, char** argv) {
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	cube = new Cube();
 	axis = new Axis();
+	floorPlane = new Floor();
 	// 사각뿔 객체 생성
 	shader = new Shader("vertex.glsl", "fragment.glsl");
 
@@ -515,11 +576,13 @@ void Keyboard(unsigned char key, int x, int y) {
 		break;
 
 
+
 	case 'F': // 포신 음의 방향 회전 토글
 		if (isRotatingGunBarrel && gunBarrelRotationDirection == -1) {
 			isRotatingGunBarrel = false;  // 정지
 			gunBarrelRotationDirection = 0;
 		}
+
 		else {
 			isRotatingGunBarrel = true;   // 시작
 			gunBarrelRotationDirection = -1;
@@ -528,12 +591,16 @@ void Keyboard(unsigned char key, int x, int y) {
 
 
 	case 'e': // 포신 중앙으로 이동 시작
+		gunBarrelRotationAngle1 = 0;
+		gunBarrelRotationAngle2 = 0;
 		if (!isMerging && !isReturning) {
 			isMerging = true;  // 중앙으로 이동 시작
 		}
 		break;
 
 	case 'E': // 포신 원래 자리로 이동 시작
+		gunBarrelRotationAngle1 = 0;
+		gunBarrelRotationAngle2 = 0;
 		if (!isMerging && !isReturning) {
 			isReturning = true; // 원래 자리로 이동 시작
 		}

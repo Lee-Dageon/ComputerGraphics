@@ -268,9 +268,62 @@ public:
 	}
 };        // 축 불러오는 클래스
 
+GLfloat floorVertices[] = {
+	// Vertex positions       // Colors
+	-5.0f, 0.0f, -5.0f,       0.5f, 0.5f, 0.5f, // Bottom-left (Gray)
+	 5.0f, 0.0f, -5.0f,       0.5f, 0.5f, 0.5f, // Bottom-right
+	 5.0f, 0.0f,  5.0f,       0.5f, 0.5f, 0.5f, // Top-right
+	-5.0f, 0.0f,  5.0f,       0.5f, 0.5f, 0.5f  // Top-left
+};
+
+GLuint floorIndices[] = {
+	0, 1, 2, // First triangle
+	0, 2, 3  // Second triangle
+};
+
+class Floor {
+public:
+	GLuint VAO, VBO, EBO;
+
+	Floor() {
+		InitBuffer();
+	}
+
+	void InitBuffer() {
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glGenBuffers(1, &EBO);
+
+		glBindVertexArray(VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(floorVertices), floorVertices, GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(floorIndices), floorIndices, GL_STATIC_DRAW);
+
+		glBindVertexArray(0);
+	}
+
+	void Render() {
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+};
+
+
 Cube* cube;
 Axis* axis;
 Shader* shader;
+Floor* floorPlane;
+
 
 
 void drawRobot(Shader* shader) {
@@ -364,6 +417,13 @@ void Render() {
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	drawRobot(shader);
 
+	// 바닥 렌더링
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, -0.11f, 0.0f)); // y = -1.0으로 이동
+	model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f)); // 크기 조정
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+	floorPlane->Render();
+
 	glutSwapBuffers();
 }
 
@@ -381,42 +441,63 @@ void RenderScene() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// ===== 뷰포트 1: 원래의 장면 출력 - 원근 투영 =====
-	glViewport(0, HEIGHT / 2, WIDTH / 2, HEIGHT / 2); // 화면의 좌측 상단
+	glViewport(0, HEIGHT / 2, WIDTH / 2, HEIGHT / 2);
 	projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / HEIGHT, 0.1f, 100.0f);
 
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	//drawRobot(shader); // 로봇 또는 장면 렌더링
-
+	
+	// 바닥 렌더링
+	glm::mat4 floorModel = glm::mat4(1.0f);
+	floorModel = glm::translate(floorModel, glm::vec3(0.0f, -0.11f, 0.0f)); // y = -1.0으로 이동
+	floorModel = glm::scale(floorModel, glm::vec3(0.5f, 0.5f, 0.5f)); // 크기 조정
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(floorModel));
+	floorPlane->Render();
+	drawRobot(shader); // 로봇 또는 장면 렌더링
+	
 	// ===== 뷰포트 2: 직각 투영 (XZ 평면) =====
 
-	glViewport(WIDTH / 2, HEIGHT / 2, WIDTH / 2, HEIGHT / 2); // 화면의 우측 상단
-	projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+	glViewport(WIDTH / 2, HEIGHT / 2, WIDTH / 2, HEIGHT / 2);
+	projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -5.0f, 5.0f);
+	glm::mat4 topView = glm::lookAt(glm::vec3(0.0f, 3.0f, cameraPos.z), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 
-	glm::mat4 topView = glm::lookAt(glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+	std::cout << cameraPos.z << std::endl;
+
+
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(topView));
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	drawRobot(shader);
+	// 바닥 렌더링
+	floorModel = glm::mat4(1.0f);
+	floorModel = glm::translate(floorModel, glm::vec3(0.0f, -0.11f, 0.0f)); // y = -1.0으로 이동
+	floorModel = glm::scale(floorModel, glm::vec3(0.5f, 0.5f, 0.5f)); // 크기 조정
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(floorModel));
+	floorPlane->Render();
+	drawRobot(shader); // 로봇 또는 장면 렌더링
 
 	// ===== 뷰포트 3: 직각 투영 (XY 평면) =====
 	glViewport(0, 0, WIDTH / 2, HEIGHT / 2); // 화면의 좌측 하단
-	projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+	projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -5.0f, 5.0f);
 
 	glm::mat4 frontView = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(frontView));
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	drawRobot(shader);
+	// 바닥 렌더링
+	floorModel = glm::mat4(1.0f);
+	floorModel = glm::translate(floorModel, glm::vec3(0.0f, -0.11f, 0.0f)); // y = -1.0으로 이동
+	floorModel = glm::scale(floorModel, glm::vec3(0.5f, 0.5f, 0.5f)); // 크기 조정
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(floorModel));
+	floorPlane->Render();
+	drawRobot(shader); // 로봇 또는 장면 렌더링
 
-	// ===== 원래 크기로 복원 =====
-	glViewport(WIDTH / 2, 0, WIDTH / 2, HEIGHT / 2); // 화면의 우측 하단
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	drawRobot(shader);
+	//// ===== 원래 크기로 복원 =====
+	//glViewport(WIDTH / 2, 0, WIDTH / 2, HEIGHT / 2); // 화면의 우측 하단
+	//glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	//glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	//drawRobot(shader);
 
 	glutSwapBuffers();
 }
-
 
 
 int main(int argc, char** argv) {
@@ -432,20 +513,21 @@ int main(int argc, char** argv) {
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	cube = new Cube();
 	axis = new Axis();
+	floorPlane = new Floor();
 	// 사각뿔 객체 생성
 	shader = new Shader("vertex.glsl", "fragment.glsl");
 
 	glutDisplayFunc(Render);
 	glutKeyboardFunc(Keyboard); // 키보드 입력 등록
-
 	glutTimerFunc(16, Update, 0); // 애니메이션 타이머 등록
 	glEnable(GL_DEPTH_TEST);
 
-	// 렌더링 콜백 함수 설정
-	glutDisplayFunc(RenderScene); // 위에서 구현한 RenderScene 함수 사용
+	glutDisplayFunc(RenderScene);
 	glutMainLoop();
 	return 0;
 }
+
+
 
 void Keyboard(unsigned char key, int x, int y) {
 	const float moveSpeed = 0.1f;
@@ -582,12 +664,16 @@ void Keyboard(unsigned char key, int x, int y) {
 
 
 	case 'e': // 포신 중앙으로 이동 시작
+		gunBarrelRotationAngle1 = 0;
+		gunBarrelRotationAngle2 = 0;
 		if (!isMerging && !isReturning) {
 			isMerging = true;  // 중앙으로 이동 시작
 		}
 		break;
 
 	case 'E': // 포신 원래 자리로 이동 시작
+		gunBarrelRotationAngle1 = 0;
+		gunBarrelRotationAngle2 = 0;
 		if (!isMerging && !isReturning) {
 			isReturning = true; // 원래 자리로 이동 시작
 		}
