@@ -175,7 +175,7 @@ public:
 
 	void Render() {
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLE_STRIP, indices.size(), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 	}
 };        // 구 불러오는 클래스
