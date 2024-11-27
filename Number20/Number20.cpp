@@ -456,13 +456,12 @@ void RenderScene() {
 	floorPlane->Render();
 	drawRobot(shader); // 로봇 또는 장면 렌더링
 	
+
 	// ===== 뷰포트 2: 직각 투영 (XZ 평면) =====
 
 	glViewport(WIDTH / 2, HEIGHT / 2, WIDTH / 2, HEIGHT / 2);
-	projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -5.0f, 5.0f);
-	glm::mat4 topView = glm::lookAt(glm::vec3(0.0f, 3.0f, cameraPos.z), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-
-	std::cout << cameraPos.z << std::endl;
+	projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / HEIGHT, 0.1f, 100.0f);
+	glm::mat4 topView = glm::lookAt(glm::vec3(0.0f, cameraPos.y, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 
 
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(topView));
@@ -477,9 +476,10 @@ void RenderScene() {
 
 	// ===== 뷰포트 3: 직각 투영 (XY 평면) =====
 	glViewport(0, 0, WIDTH / 2, HEIGHT / 2); // 화면의 좌측 하단
-	projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -5.0f, 5.0f);
+	projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / HEIGHT, 0.1f, 100.0f);
 
-	glm::mat4 frontView = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 frontView = glm::lookAt(glm::vec3(0.0f, 0.0f, cameraPos.z), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(frontView));
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	// 바닥 렌더링
