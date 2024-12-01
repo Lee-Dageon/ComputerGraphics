@@ -149,72 +149,98 @@ public:
 
 
 	void InitBuffer() {
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
-		glGenBuffers(1, &colorVBO);
+    // 정점과 인덱스 분리
+    std::vector<Vertex> frontVertices;
+    std::vector<GLuint> frontIndices;
 
-		glBindVertexArray(VAO);
+    for (size_t i = 0; i < indices.size(); i += 3) {
+        if (IsFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
+            for (size_t j = 0; j < 3; ++j) {
+                frontVertices.push_back(vertices[indices[i + j]]);
+                frontIndices.push_back(frontIndices.size());
+            }
+        }
+    }
 
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-		glEnableVertexAttribArray(0);
+    // 앞면 VAO, VBO, EBO 생성
+    glGenVertexArrays(1, &frontVAO);
+    glGenBuffers(1, &frontVBO);
+    glGenBuffers(1, &frontEBO);
 
-		GLfloat colors[] = {
-			1.0f, 0.0f, 0.0f,  // 앞면 빨강
-			0.0f, 1.0f, 0.0f,  // 뒷면 초록
-			0.0f, 0.0f, 1.0f,  // 윗면 파랑
-			1.0f, 1.0f, 0.0f,  // 아랫면 노랑
-			1.0f, 0.0f, 1.0f,  // 왼쪽 면 자홍색
-			0.0f, 1.0f, 1.0f   // 오른쪽 면 청록색
-		};
+    glBindVertexArray(frontVAO);
 
-		glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
-		glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, frontVBO);
+    glBufferData(GL_ARRAY_BUFFER, frontVertices.size() * sizeof(Vertex), frontVertices.data(), GL_STATIC_DRAW);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+    glEnableVertexAttribArray(0);
 
-		glBindVertexArray(0);
-	}
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, frontEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, frontIndices.size() * sizeof(GLuint), frontIndices.data(), GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+
+    // 나머지 면 처리 (기존처럼)
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+}
+
 
 	void Render() {
-		glUseProgram(shaderProgramID);  // 셰이더 프로그램 사용
+		glUseProgram(shaderProgramID); // 셰이더 프로그램 사용
 
 		glBindVertexArray(VAO);
 
-		//// 앞면만 회전시키는 로직
+		// 1. 앞면만 별도로 슬라이드 적용하여 렌더링
 		if (frontFaceMovingEnabled) {
-		
-			// 앞면만 그리기
+			// 슬라이딩 변환 행렬 생성
+			glm::mat4 leftSlideModel = glm::translate(glm::mat4(1.0f), glm::vec3(slideDistance, 0.0f, 0.0f));
+			glm::mat4 rightSlideModel = glm::translate(glm::mat4(1.0f), glm::vec3(-slideDistance, 0.0f, 0.0f));
+
+			unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "model");
+
 			for (size_t i = 0; i < indices.size(); i += 3) {
-				if (IsFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
-					// 앞면 정점만 회전 적용 후 렌더링
+				if (IsLeftFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
+					glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(leftSlideModel));
+					glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(i * sizeof(GLuint)), 0);
+				}
+				else if (IsRightFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
+					glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(rightSlideModel));
 					glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(i * sizeof(GLuint)), 0);
 				}
 			}
 		}
 
-		// 나머지 큐브 부분은 기본 회전 적용하여 렌더링
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::rotate(model, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		// 2. 나머지 면 렌더링 (기본 변환 적용)
+		glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
 		model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
 
-		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "trans");
+		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "model");
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 
 		for (size_t i = 0; i < indices.size(); i += 3) {
 			if (!IsFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
-				// 앞면이 아닌 나머지 면 렌더링
 				glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(i * sizeof(GLuint)), 0);
 			}
 		}
 
 		glBindVertexArray(0);
 	}
+
 
 
 	bool IsFrontFace(GLuint idx1, GLuint idx2, GLuint idx3) {
@@ -257,6 +283,8 @@ public:
 	}
 
 };  // 큐브 불러오는 클래스 끝
+
+
 
 
 class Axis {        // 축 불러오는 클래스
