@@ -147,6 +147,7 @@ public:
 		return true;
 	}
 
+
 	void InitBuffer() {
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
@@ -187,32 +188,7 @@ public:
 
 		//// 앞면만 회전시키는 로직
 		if (frontFaceMovingEnabled) {
-		//	// 앞면의 정점들의 중심을 계산
-		//	glm::vec3 center(0.0f);
-		//	for (size_t i = 0; i < indices.size(); i += 3) {
-		//		if (IsFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
-		//			center += glm::vec3(vertices[indices[i]].x, vertices[indices[i]].y, vertices[indices[i]].z);
-		//			center += glm::vec3(vertices[indices[i + 1]].x, vertices[indices[i + 1]].y, vertices[indices[i + 1]].z);
-		//			center += glm::vec3(vertices[indices[i + 2]].x, vertices[indices[i + 2]].y, vertices[indices[i + 2]].z);
-		//			center /= 3.0f;  // 앞면의 세 정점의 평균을 중심으로 설정
-		//			break;
-		//		}
-		//	}
-
-		//	// 앞면만 회전하는 변환 행렬 설정 (기존 모델 회전 추가)
-		//	glm::mat4 frontFaceTransform = glm::mat4(1.0f);
-
-		//	// 나머지 큐브와 동일한 회전 적용 (전체 회전)
-		//	frontFaceTransform = glm::rotate(frontFaceTransform, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
-		//	frontFaceTransform = glm::rotate(frontFaceTransform, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
-
-		//	frontFaceTransform = glm::translate(frontFaceTransform, center); // 중심으로 이동
-		//	// 앞면 중심 기준 회전 추가 (x축 기준으로 회전 - 뚜껑처럼 회전) ; // 중심 기준 회전 (x축 기준으로 뚜껑처럼 회전)
-		//	frontFaceTransform = glm::translate(frontFaceTransform, -center); // 원래 위치로 이동
-
-		//	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "trans");
-		//	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(frontFaceTransform));
-
+		
 			// 앞면만 그리기
 			for (size_t i = 0; i < indices.size(); i += 3) {
 				if (IsFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
