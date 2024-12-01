@@ -231,8 +231,6 @@ public:
 		glBindVertexArray(0);
 	}
 
-
-
 	bool IsFrontFace(GLuint idx1, GLuint idx2, GLuint idx3) {
 		// 앞면은 정점 1, 2, 3과 1, 3, 4로 구성됨 (예시)
 		return (idx1 == 0 && idx2 == 1 && idx3 == 2) ||
