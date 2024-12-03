@@ -13,7 +13,7 @@
 
 #define WIDTH 600
 #define HEIGHT 600
-GLfloat rotationX = 30.0f;
+GLfloat rotationX = 0.0f;
 GLfloat rotationY = 0.0f;
 GLfloat movementOffset = 0.0f; // 0번과 1번 면의 이동 거리
 bool opening = false;          // 무대 열림 여부
@@ -146,6 +146,7 @@ public:
 		// 색상 VBO 설정
 		GLfloat colors[] = {
 			1.0f, 0.0f, 0.0f, // 빨강
+			1.0f, 0.0f, 0.0f, // 빨강
 			0.0f, 1.0f, 0.0f, // 초록
 			0.0f, 0.0f, 1.0f, // 파랑
 			1.0f, 1.0f, 0.0f, // 노랑
@@ -154,7 +155,7 @@ public:
 		};
 		glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
 		glEnableVertexAttribArray(1);
 
 		// 각 면에 대한 EBO 설정
@@ -236,7 +237,6 @@ void Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	shader->Use();
 
-
 	// 투영 행렬 설정 (원근 투영)
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 	unsigned int projectionLocation = glGetUniformLocation(shader->programID, "projection");
@@ -244,50 +244,66 @@ void Render() {
 
 	// 뷰 행렬 설정 (카메라 위치)
 	glm::mat4 view = glm::lookAt(
-		glm::vec3(0.0f, 0.0f, 2.0f),  // 카메라 위치
+		glm::vec3(0.0f, 0.0f, 1.8f),  // 카메라 위치
 		glm::vec3(0.0f, 0.0f, 0.0f),  // 카메라가 바라보는 지점
 		glm::vec3(0.0f, 1.0f, 0.0f)   // 월드업 벡터 (y축)
 	);
+
+	// 육면의 색상을 정의합니다.
+	glm::vec3 faceColors[7] = {
+		glm::vec3(1.0f, 0.0f, 0.0f), // 0번 면: 빨강
+		glm::vec3(1.0f, 0.0f, 0.0f), // 1번 면: 초록
+		glm::vec3(0.529f, 0.808f, 0.922f), // 2번 면: 파랑
+		glm::vec3(1.0f, 1.0f, 0.0f), // 3번 면: 노랑
+		glm::vec3(1.0f, 0.0f, 1.0f), // 4번 면: 자홍
+		glm::vec3(0.0f, 1.0f, 1.0f), // 5번 면: 청록
+		glm::vec3(0.5f, 0.5f, 0.5f)  // 6번 면: 회색
+	};
+	
 	unsigned int viewLocation = glGetUniformLocation(shader->programID, "view");
 	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
 
-
-	// 모델 행렬 설정 (큐브)
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f)); // Y축 자전 반영
-	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 자전 반영
+	// 모델 행렬 및 색상 설정
 	unsigned int modelLocation = glGetUniformLocation(shader->programID, "model");
+	unsigned int faceColorLocation = glGetUniformLocation(shader->programID, "faceColor");
+
+	// 0번과 1번 면은 별도로 처리 (이동 적용)
+	glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(+movementOffset, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
-
-
-	// 선택된 면만 렌더링
-	for (int i = 2; i < 7; ++i) {
-		cube->RenderFace(i);  // 모든 면 렌더링 (필요한 경우 특정 면만 렌더링할 수 있음)
-	}
-
-	// 0번 면 이동
-	model = glm::translate(glm::mat4(1.0f), glm::vec3(+movementOffset, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f)); // Y축 자전 반영
-	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 자전 반영
-	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+	glUniform3fv(faceColorLocation, 1, glm::value_ptr(faceColors[0])); // 0번 면 색상
 	cube->RenderFace(0);
 
-	// 1번 면 이동
 	model = glm::translate(glm::mat4(1.0f), glm::vec3(-movementOffset, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f)); // Y축 자전 반영
-	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 자전 반영
+	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+	glUniform3fv(faceColorLocation, 1, glm::value_ptr(faceColors[1])); // 1번 면 색상
 	cube->RenderFace(1);
 
+	// 나머지 면 렌더링 (2번 ~ 6번 면)
+	for (int i = 2; i < 7; ++i) {
+		model = glm::mat4(1.0f); // 기본 위치
+		model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 
+		// 면 색상 전달
+		glUniform3fv(faceColorLocation, 1, glm::value_ptr(faceColors[i]));
 
-	// 축 렌더링 (뷰와 투영을 그대로 적용)
-	model = glm::mat4(1.0f);
+		// 면 렌더링
+		cube->RenderFace(i);
+	}
+
+	// 축 렌더링
+	model = glm::mat4(1.0f); // 축은 이동/회전 없이 기본 상태
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	axis->Render();
 
 	glutSwapBuffers();
 }
+
 
 
 // 키 입력 처리 함수
@@ -325,7 +341,8 @@ int main(int argc, char** argv) {
 	glewExperimental = GL_TRUE;
 	glewInit();
 
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // R, G, B 값을 0으로 설정해 검은색으로 설정
+
 	cube = new Cube();
 	axis = new Axis();
 	shader = new Shader("vertex.glsl", "fragment.glsl");

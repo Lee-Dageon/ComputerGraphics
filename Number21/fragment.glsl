@@ -1,8 +1,9 @@
 #version 330 core
 
-in vec3 vertexColor;
+uniform vec3 faceColor; // 면별 색상
+
 out vec4 FragColor;
 
 void main() {
-    FragColor = vec4(vertexColor, 1.0);
+    FragColor = vec4(faceColor, 1.0); // 단색 출력
 }
