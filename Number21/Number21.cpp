@@ -375,13 +375,13 @@ std::vector<SmallCube*> smallCubes;
 
 // SmallCube 크기와 위치 설정
 float smallCubeSize = 0.1f; // SmallCube 크기
-float robotscale = 0.2f;
+float robotscale = 0.08f;
 
 // SmallCube 위치를 저장하는 배열
 glm::vec3 positions[3];
 
 // RobotCube 초기 위치
-glm::vec3 robotPosition(0.0f, 0.0f, 0.0f);
+glm::vec3 robotPosition(0.0f, -0.3f, 0.0f);
 
 void RenderRobotCube() {
 	// 본체
@@ -391,17 +391,52 @@ void RenderRobotCube() {
 	unsigned int faceColorLocation = glGetUniformLocation(shader->programID, "faceColor");
 
 	// 본체 색상
-	glm::vec3 robotBodyColor(0.8f, 0.8f, 0.2f); // 밝은 노란색
+	glm::vec3 robotBodyColor(0.2f, 0.5f, 0.8f); // 파란색 계열
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	glUniform3fv(faceColorLocation, 1, glm::value_ptr(robotBodyColor));
 	robotCube->Render();
 
 	// 머리
-	glm::mat4 headModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(0.0f, 0.1f, 0.0f)); // 본체 위로 이동
-	headModel = glm::scale(headModel, glm::vec3(robotscale*0.8)); // 머리 크기 조정
+	glm::mat4 headModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(0.0f, 0.08f, 0.0f)); // 본체 위로 이동
+	headModel = glm::scale(headModel, glm::vec3(robotscale * 0.75f)); // 머리 크기 조정
 	glm::vec3 robotHeadColor(0.2f, 0.5f, 0.8f); // 파란색 계열
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(headModel));
 	glUniform3fv(faceColorLocation, 1, glm::value_ptr(robotHeadColor));
+	robotCube->Render();
+
+	// 왼쪽 팔
+	glm::mat4 leftArmModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(-0.05f, 0.0f, 0.0f)); // 본체 왼쪽
+	leftArmModel = glm::rotate(leftArmModel, glm::radians(-45.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Z축 기준 반시계 방향으로 회전
+	leftArmModel = glm::scale(leftArmModel, glm::vec3(robotscale * 0.2f, robotscale * 0.8f, robotscale * 0.2f)); // 팔 크기 조정
+	glm::vec3 leftArmColor(0.5f, 0.2f, 0.2f); // 붉은색 계열
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(leftArmModel));
+	glUniform3fv(faceColorLocation, 1, glm::value_ptr(leftArmColor));
+	robotCube->Render();
+
+	// 오른쪽 팔
+	glm::mat4 rightArmModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(+0.05f, 0.0f, 0.0f)); // 본체 오른쪽
+	rightArmModel = glm::rotate(rightArmModel, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Z축 기준 시계 방향으로 회전
+	rightArmModel = glm::scale(rightArmModel, glm::vec3(robotscale * 0.2f, robotscale * 0.8f, robotscale * 0.2f)); // 팔 크기 조정
+	glm::vec3 rightArmColor(0.5f, 0.2f, 0.2f); // 붉은색 계열
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(rightArmModel));
+	glUniform3fv(faceColorLocation, 1, glm::value_ptr(rightArmColor));
+	robotCube->Render();
+
+
+	// 왼쪽 다리
+	glm::mat4 leftLegModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(-robotscale * 0.25f, - 0.06f, 0.0f)); // 본체 아래 왼쪽
+	leftLegModel = glm::scale(leftLegModel, glm::vec3(robotscale * 0.2f, robotscale, robotscale * 0.2f)); // 다리 크기 조정
+	glm::vec3 leftLegColor(0.2f, 0.5f, 0.2f); // 초록색 계열
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(leftLegModel));
+	glUniform3fv(faceColorLocation, 1, glm::value_ptr(leftLegColor));
+	robotCube->Render();
+
+	// 오른쪽 다리
+	glm::mat4 rightLegModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(robotscale * 0.25f, - 0.06f, 0.0f)); // 본체 아래 오른쪽
+	rightLegModel = glm::scale(rightLegModel, glm::vec3(robotscale * 0.2f, robotscale, robotscale * 0.2f)); // 다리 크기 조정
+	glm::vec3 rightLegColor(0.2f, 0.5f, 0.2f); // 초록색 계열
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(rightLegModel));
+	glUniform3fv(faceColorLocation, 1, glm::value_ptr(rightLegColor));
 	robotCube->Render();
 }
 
