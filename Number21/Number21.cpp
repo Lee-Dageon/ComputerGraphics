@@ -373,12 +373,17 @@ RobotCube* robotCube;
 glm::vec3 robotPosition(0.0f, -0.3f, 0.0f); // 로봇의 초기 위치
 float robotSpeed = 0.01f; // 이동 속도
 float robotDirection = 1.0f; // 이동 방향 (1: 오른쪽, -1: 왼쪽)
-float movementLimit = 0.4f; // 이동 가능한 최대 범위
+float movementLimit = 0.45f; // 이동 가능한 최대 범위
 
 float armSwingAngle = 0.0f;      // 팔과 다리의 스윙 각도
 float armSwingSpeed = 2.0f;      // 스윙 속도
-bool armSwingDirection = true;  // true: 증가 방향, false: 감소 방향
+bool armSwingDirection = true;	// true: 증가 방향, false: 감소 방향
 float bodyRotationY = 0.0f;      // 몸의 Y축 회전
+
+float armSwingMaxAngle = 60.0f;  // 다리 스윙 각도의 최대치 (속도에 비례)
+float speedIncrement = 0.005f;   // 속도 변화량
+
+float maxRobotSpeed = 0.1f; // 로봇의 최대 속도
 
 
 // SmallCube를 관리하는 객체 배열
@@ -387,6 +392,17 @@ std::vector<SmallCube*> smallCubes;
 // SmallCube 크기와 위치 설정
 float smallCubeSize = 0.1f; // SmallCube 크기
 float robotscale = 0.08f;
+
+float robotDirectionZ = 0.0f; // Z축 이동 방향 (1: 앞쪽, -1: 뒤쪽, 0: 멈춤)
+float movementLimitZ = 0.75f;  // Z축 이동 가능한 최대 범위
+
+bool isJumping = false;        // 로봇이 점프 중인지 여부
+float jumpVelocity = 0.03f;    // 초기 점프 속도 (기존보다 낮게 설정)
+float gravity = 0.001f;        // 중력 값 감소 (느린 하강 속도)
+
+float groundHeight = -0.3f;    // 로봇의 초기 y축 위치
+float obstacleHeight = 0.1f;   // 장애물의 높이 (예: 0.2f)
+
 
 // SmallCube 위치를 저장하는 배열
 glm::vec3 positions[3];
@@ -443,6 +459,9 @@ void RenderRobotCube() {
 
 	// 왼쪽 다리
 	glm::mat4 leftLegModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(-robotscale * 0.25f, - 0.06f, 0.0f)); // 본체 아래 왼쪽
+	leftLegModel = glm::translate(leftLegModel, glm::vec3(robotscale * 0.25f, 0.0f, 0.0f));  // 팔의 기준을 몸체 중심으로 이동
+	leftLegModel = glm::rotate(leftLegModel, glm::radians(bodyRotationY), glm::vec3(0.0f, 1.0f, 0.0f)); // 몸체 중심 기준 회전
+	leftLegModel = glm::translate(leftLegModel, glm::vec3(-robotscale * 0.25f, 0.0f, 0.0f)); // 다시 원래 팔 위치로 이동
 	leftLegModel = glm::rotate(leftLegModel, glm::radians(armSwingAngle), glm::vec3(1.0f, 0.0f, 0.0f)); // 스윙
 	leftLegModel = glm::scale(leftLegModel, glm::vec3(robotscale * 0.2f, robotscale, robotscale * 0.2f)); // 다리 크기 조정
 	glm::vec3 leftLegColor(0.2f, 0.5f, 0.2f); // 초록색 계열
@@ -452,7 +471,10 @@ void RenderRobotCube() {
 
 	// 오른쪽 다리
 	glm::mat4 rightLegModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(robotscale * 0.25f, - 0.06f, 0.0f)); // 본체 아래 오른쪽
-	 rightLegModel = glm::rotate(rightLegModel, glm::radians(-armSwingAngle), glm::vec3(1.0f, 0.0f, 0.0f)); // 스윙
+	rightLegModel = glm::translate(rightLegModel, glm::vec3(-robotscale * 0.25f, 0.0f, 0.0f));  // 팔의 기준을 몸체 중심으로 이동
+	rightLegModel = glm::rotate(rightLegModel, glm::radians(bodyRotationY), glm::vec3(0.0f, 1.0f, 0.0f)); // 몸체 중심 기준 회전
+	rightLegModel = glm::translate(rightLegModel, glm::vec3(robotscale * 0.25f, 0.0f, 0.0f)); // 다시 원래 팔 위치로 이동
+	rightLegModel = glm::rotate(rightLegModel, glm::radians(-armSwingAngle), glm::vec3(1.0f, 0.0f, 0.0f)); // 스윙
 	rightLegModel = glm::scale(rightLegModel, glm::vec3(robotscale * 0.2f, robotscale, robotscale * 0.2f)); // 다리 크기 조정
 	glm::vec3 rightLegColor(0.2f, 0.5f, 0.2f); // 초록색 계열
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(rightLegModel));
@@ -461,7 +483,7 @@ void RenderRobotCube() {
 
 	// 코
 	glm::mat4 noseModel = glm::translate(headModel, glm::vec3(0.0f, -0.05f, 0.5f)); // 머리 중심에서 약간 앞으로
-	noseModel = glm::scale(noseModel, glm::vec3(robotscale)); // 코 크기 조정 (작게)
+	noseModel = glm::scale(noseModel, glm::vec3(robotscale*2)); // 코 크기 조정 (작게)
 	glm::vec3 noseColor(0.0f, 0.0f, 0.0f); // 까만색
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(noseModel));
 	glUniform3fv(faceColorLocation, 1, glm::value_ptr(noseColor));
@@ -578,15 +600,68 @@ void Render() {
 
 
 
-// 키 입력 처리 함수
 void Keyboard(unsigned char key, int x, int y) {
+
 	if (key == 'o' || key == 'O') {
 		opening = !opening; // 무대 열기/닫기 토글
 	}
+	else if (key == 's' || key == 'S') {
+		robotDirection = 0.0f;      // X축 이동 멈춤
+		robotDirectionZ = 1.0f;     // Z축 양의 방향으로 이동
+		bodyRotationY = 0.0f;       // 몸을 앞쪽으로 회전
+	}
+	else if (key == 'w' || key == 'W') {
+		robotDirection = 0.0f;      // X축 이동 멈춤
+		robotDirectionZ = -1.0f;    // Z축 음의 방향으로 이동
+		bodyRotationY = 180.0f;     // 몸을 뒤쪽으로 회전
+	}
+	else if (key == 'a' || key == 'A') {
+		robotDirection = -1.0f;     // X축 음의 방향으로 이동
+		robotDirectionZ = 0.0f;     // Z축 이동 멈춤
+		bodyRotationY = -90.0f;     // 몸을 왼쪽으로 회전
+	}
+	else if (key == 'd' || key == 'D') {
+		robotDirection = 1.0f;      // X축 양의 방향으로 이동
+		robotDirectionZ = 0.0f;     // Z축 이동 멈춤
+		bodyRotationY = 90.0f;      // 몸을 오른쪽으로 회전
+	}
+
+	else if (key == '+') {
+		// 속도 증가
+		if (robotSpeed + speedIncrement <= maxRobotSpeed) {  // 속도와 증감량의 합이 최대 속도 이하인지 확인
+			robotSpeed += speedIncrement;
+			armSwingMaxAngle = std::min(60.0f, armSwingMaxAngle + 6.0f); // 스윙 각도 제한
+		}
+		else {
+			robotSpeed = maxRobotSpeed; // 최대 속도에 고정
+		}
+	}
+
+	else if (key == '-') {
+		// 속도 감소
+		if (robotSpeed - speedIncrement >= 0.01f) {  // 속도와 감소량의 차가 최소 속도 이상인지 확인
+			robotSpeed -= speedIncrement;
+			armSwingMaxAngle = std::max(10.0f, armSwingMaxAngle - 6.0f); // 스윙 각도 제한
+		}
+		else {
+			robotSpeed = 0.01f; // 최소 속도로 고정
+		}
+	}
+
+	else if (key == 'j' || key == 'J') {
+		if (!isJumping) { // 점프 중이 아닐 때만 점프 시작
+			isJumping = true;
+			jumpVelocity = 0.05f; // 초기 점프 속도
+		}
+	}
+
+
 }
+
 
 // 애니메이션 업데이트 함수
 void Update(int value) {
+
 	// 무대 열림 애니메이션
 	if (opening && movementOffset < 2.0f) {
 		movementOffset += 0.01f;
@@ -598,29 +673,71 @@ void Update(int value) {
 	// 로봇의 좌우 이동 업데이트
 	robotPosition.x += robotSpeed * robotDirection;
 
-	// 범위를 벗어나면 방향 반전
+	// Z축 이동
+	robotPosition.z += robotSpeed * robotDirectionZ;
+
+
+	// X축 범위를 벗어나면 방향 반전
 	if (robotPosition.x > movementLimit || robotPosition.x < -movementLimit) {
 		robotDirection *= -1.0f;
+		if (robotDirection > 0) {
+			bodyRotationY = 90.0f; // 오른쪽 방향
+		}
+		else {
+			bodyRotationY = -90.0f; // 왼쪽 방향
+		}
 	}
 
-	// 이동 방향에 따라 몸 회전
-	if (robotDirection > 0) {
-		bodyRotationY = 90.0f; // 오른쪽 방향
+	// Z축 범위를 벗어나면 방향 반전
+	if (robotPosition.z > movementLimitZ || robotPosition.z < -movementLimitZ) {
+		robotDirectionZ *= -1.0f;
+		if (robotDirectionZ > 0) {
+			bodyRotationY = 0.0f; // 앞쪽 방향
+		}
+		else {
+			bodyRotationY = 180.0f; // 뒤쪽 방향
+		}
+	}
+
+	if (isJumping) {
+		robotPosition.y += jumpVelocity;    // 점프 속도만큼 y축 위치 증가
+		jumpVelocity -= gravity;           // 중력 적용
+
+		// 점프 중 장애물 위로 올라가거나 내려오는 로직
+		if (robotPosition.y <= groundHeight) {
+			robotPosition.y = groundHeight; // 땅에 도달
+			isJumping = false;              // 점프 종료
+		}
+		else if (robotPosition.y >= obstacleHeight) {
+			robotPosition.y = obstacleHeight; // 장애물 높이에 도달
+			jumpVelocity = -0.03f;            // 내려가기 시작
+		}
+	}
+
+
+	// 팔과 다리의 스윙 각도 조정
+	if (armSwingDirection) {
+		armSwingAngle += armSwingSpeed;
+		if (armSwingAngle > 60.0f) armSwingDirection = false; // 최대 각도에 도달하면 반전
 	}
 	else {
-		bodyRotationY = -90.0f; // 왼쪽 방향
+		armSwingAngle -= armSwingSpeed;
+		if (armSwingAngle < -60.0f) armSwingDirection = true; // 최소 각도에 도달하면 반전
 	}
 
 	// 팔과 다리의 스윙 각도 조정
 	if (armSwingDirection) {
 		armSwingAngle += armSwingSpeed;
-		if (armSwingAngle > 30.0f) armSwingDirection = false; // 최대 각도에 도달하면 반전
+		if (armSwingAngle > armSwingMaxAngle) {
+			armSwingDirection = false; // 최대 각도에 도달하면 반전
+		}
 	}
 	else {
 		armSwingAngle -= armSwingSpeed;
-		if (armSwingAngle < -30.0f) armSwingDirection = true; // 최소 각도에 도달하면 반전
+		if (armSwingAngle < -armSwingMaxAngle) {
+			armSwingDirection = true; // 최소 각도에 도달하면 반전
+		}
 	}
-
 
 	glutPostRedisplay();
 	glutTimerFunc(16, Update, 0); // 약 60fps
