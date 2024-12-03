@@ -386,6 +386,14 @@ float speedIncrement = 0.005f;   // 속도 변화량
 float maxRobotSpeed = 0.1f; // 로봇의 최대 속도
 
 
+glm::vec3 cameraPos(0.0f, 0.0f, 1.8f);    // 초기 카메라 위치
+glm::vec3 cameraTarget(0.0f, 0.0f, 0.0f); // 카메라가 바라보는 대상
+glm::vec3 cameraUp(0.0f, 1.0f, 0.0f);     // 월드 업 벡터
+float cameraRadius = 1.8f;                // 카메라와 대상 간 거리 (공전용)
+float cameraAngleY = 0.0f;                // Y축 회전 각도 (라디안)
+
+
+
 // SmallCube를 관리하는 객체 배열
 std::vector<SmallCube*> smallCubes;
 
@@ -397,15 +405,42 @@ float robotDirectionZ = 0.0f; // Z축 이동 방향 (1: 앞쪽, -1: 뒤쪽, 0: 멈춤)
 float movementLimitZ = 0.75f;  // Z축 이동 가능한 최대 범위
 
 bool isJumping = false;        // 로봇이 점프 중인지 여부
-float jumpVelocity = 0.03f;    // 초기 점프 속도 (기존보다 낮게 설정)
-float gravity = 0.001f;        // 중력 값 감소 (느린 하강 속도)
+float jumpVelocity = 0.02f;  // 초기 점프 속도 (더 낮게 설정)
+float gravity = 0.001f;      // 중력 값 감소 (더 느린 하강 속도)
 
 float groundHeight = -0.3f;    // 로봇의 초기 y축 위치
 float obstacleHeight = 0.1f;   // 장애물의 높이 (예: 0.2f)
 
+bool isColliding = false;
 
 // SmallCube 위치를 저장하는 배열
 glm::vec3 positions[3];
+
+bool CheckCollision(glm::vec3 robotPosition, glm::vec3 smallCubePosition) {
+	float distanceX = abs(robotPosition.x - smallCubePosition.x);
+	float distanceY = abs(robotPosition.y - smallCubePosition.y);
+	float distanceZ = abs(robotPosition.z - smallCubePosition.z);
+
+	// 충돌 범위를 줄이기 위해 크기를 조정
+	float collisionDistanceX = (robotscale + smallCubeSize) * 0.7f; // X축 범위를 80%로 줄임
+	float collisionDistanceY = (robotscale + smallCubeSize) * 0.8f; // Y축 범위를 80%로 줄임
+	float collisionDistanceZ = (robotscale + smallCubeSize) * 0.8f; // Z축 범위를 80%로 줄임
+
+	bool isColliding = (distanceX < collisionDistanceX &&
+		distanceY < collisionDistanceY &&
+		distanceZ < collisionDistanceZ);
+
+	//// 디버깅 출력
+	//std::cout << "Checking Collision: " << std::endl;
+	//std::cout << "  Robot Position: (" << robotPosition.x << ", " << robotPosition.y << ", " << robotPosition.z << ")" << std::endl;
+	//std::cout << "  SmallCube Position: (" << smallCubePosition.x << ", " << smallCubePosition.y << ", " << smallCubePosition.z << ")" << std::endl;
+	//std::cout << "  Distances - X: " << distanceX << ", Y: " << distanceY << ", Z: " << distanceZ << std::endl;
+	//std::cout << "  Collision: " << (isColliding ? "Yes" : "No") << std::endl;
+
+	return isColliding;
+}
+
+
 
 void RenderRobotCube() {
 	// 본체
@@ -493,7 +528,6 @@ void RenderRobotCube() {
 }
 
 
-
 // SmallCube 위치를 초기화하는 함수
 void InitializeSmallCubes() {
 	// 랜덤 초기화를 위해 시드 설정
@@ -521,12 +555,12 @@ void Render() {
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 	unsigned int projectionLocation = glGetUniformLocation(shader->programID, "projection");
 	glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
-
+	
 	// 뷰 행렬 설정 (카메라 위치)
 	glm::mat4 view = glm::lookAt(
-		glm::vec3(0.0f, 0.0f, 1.8f),  // 카메라 위치
-		glm::vec3(0.0f, 0.0f, 0.0f),  // 카메라가 바라보는 지점
-		glm::vec3(0.0f, 1.0f, 0.0f)   // 월드업 벡터 (y축)
+		cameraPos,        // 카메라 위치
+		cameraTarget,     // 카메라가 바라보는 지점
+		cameraUp          // 월드 업 벡터
 	);
 
 	// 육면의 색상을 정의합니다.
@@ -648,95 +682,106 @@ void Keyboard(unsigned char key, int x, int y) {
 		}
 	}
 
-	else if (key == 'j' || key == 'J') {
-		if (!isJumping) { // 점프 중이 아닐 때만 점프 시작
+	if (key == 'j' || key == 'J') {
+		if (!isJumping) { // 점프 중이 아닐 때만 점프
 			isJumping = true;
-			jumpVelocity = 0.05f; // 초기 점프 속도
+			jumpVelocity = 0.02f;
+			isColliding = false; // 충돌 상태 무시
 		}
 	}
 
+	float moveStep = 0.1f;   // 카메라 이동 속도
+	float angleStep = glm::radians(5.0f); // 카메라 회전 각도 (5도)
 
+	if (key == 'z') {
+		cameraPos.z -= moveStep; // 카메라를 앞쪽으로 이동
+	}
+	else if (key == 'Z') {
+		cameraPos.z += moveStep; // 카메라를 뒤쪽으로 이동
+	}
+	else if (key == 'x') {
+		cameraPos.x -= moveStep; // 카메라를 왼쪽으로 이동
+	}
+	else if (key == 'X') {
+		cameraPos.x += moveStep; // 카메라를 오른쪽으로 이동
+	}
+	else if (key == 'y') {
+		cameraAngleY -= angleStep; // Y축 기준 반시계 회전
+	}
+	else if (key == 'Y') {
+		cameraAngleY += angleStep; // Y축 기준 시계 회전
+	}
+
+	else if (key == 'u') {
+		cameraPos.y -= moveStep; // 카메라를 왼쪽으로 이동
+	}
+	else if (key == 'U') {
+		cameraPos.y += moveStep; // 카메라를 오른쪽으로 이동
+	}
+
+
+
+	// Y축 기준 공전 계산
+	if (key == 'y' || key == 'Y') {
+		cameraPos.x = cameraRadius * cos(cameraAngleY);
+		cameraPos.z = cameraRadius * sin(cameraAngleY);
+	}
+ 
 }
 
 
-// 애니메이션 업데이트 함수
 void Update(int value) {
+	isColliding = false; // 매 프레임 초기화
+	// 충돌 감지
 
-	// 무대 열림 애니메이션
-	if (opening && movementOffset < 2.0f) {
-		movementOffset += 0.01f;
+	// 모든 SmallCube의 위치를 확인
+	for (size_t i = 0; i < smallCubes.size(); ++i) {
+		if (CheckCollision(robotPosition-0.01f, positions[i])) {
+			isColliding = true;
+			break; // 충돌이 확인되면 더 이상 확인하지 않음
+		}
 	}
-	else if (!opening && movementOffset > 2.0f) {
-		movementOffset -= 0.01f;
+
+	// 충돌 중이면 X, Z 이동을 멈춤
+	if (isColliding && !isJumping) {
+		robotDirection = 0.0f;
+		robotDirectionZ = 0.0f;
+	}
+	else {
+		// 기존 이동 로직
+		robotPosition.x += robotSpeed * robotDirection;
+		robotPosition.z += robotSpeed * robotDirectionZ;
 	}
 
-	// 로봇의 좌우 이동 업데이트
-	robotPosition.x += robotSpeed * robotDirection;
-
-	// Z축 이동
-	robotPosition.z += robotSpeed * robotDirectionZ;
-
-
-	// X축 범위를 벗어나면 방향 반전
+	// X축, Z축 범위 제한 (충돌과 관계없이)
 	if (robotPosition.x > movementLimit || robotPosition.x < -movementLimit) {
 		robotDirection *= -1.0f;
-		if (robotDirection > 0) {
-			bodyRotationY = 90.0f; // 오른쪽 방향
-		}
-		else {
-			bodyRotationY = -90.0f; // 왼쪽 방향
-		}
+		bodyRotationY = (robotDirection > 0) ? 90.0f : -90.0f;
 	}
-
-	// Z축 범위를 벗어나면 방향 반전
 	if (robotPosition.z > movementLimitZ || robotPosition.z < -movementLimitZ) {
 		robotDirectionZ *= -1.0f;
-		if (robotDirectionZ > 0) {
-			bodyRotationY = 0.0f; // 앞쪽 방향
-		}
-		else {
-			bodyRotationY = 180.0f; // 뒤쪽 방향
-		}
+		bodyRotationY = (robotDirectionZ > 0) ? 0.0f : 180.0f;
 	}
 
+	// 점프 로직
 	if (isJumping) {
-		robotPosition.y += jumpVelocity;    // 점프 속도만큼 y축 위치 증가
-		jumpVelocity -= gravity;           // 중력 적용
+		robotPosition.y += jumpVelocity;
+		jumpVelocity -= gravity;
 
-		// 점프 중 장애물 위로 올라가거나 내려오는 로직
 		if (robotPosition.y <= groundHeight) {
-			robotPosition.y = groundHeight; // 땅에 도달
-			isJumping = false;              // 점프 종료
-		}
-		else if (robotPosition.y >= obstacleHeight) {
-			robotPosition.y = obstacleHeight; // 장애물 높이에 도달
-			jumpVelocity = -0.03f;            // 내려가기 시작
+			robotPosition.y = groundHeight;
+			isJumping = false;
 		}
 	}
 
-
-	// 팔과 다리의 스윙 각도 조정
+	// 팔과 다리 스윙 업데이트
 	if (armSwingDirection) {
 		armSwingAngle += armSwingSpeed;
-		if (armSwingAngle > 60.0f) armSwingDirection = false; // 최대 각도에 도달하면 반전
+		if (armSwingAngle > armSwingMaxAngle) armSwingDirection = false;
 	}
 	else {
 		armSwingAngle -= armSwingSpeed;
-		if (armSwingAngle < -60.0f) armSwingDirection = true; // 최소 각도에 도달하면 반전
-	}
-
-	// 팔과 다리의 스윙 각도 조정
-	if (armSwingDirection) {
-		armSwingAngle += armSwingSpeed;
-		if (armSwingAngle > armSwingMaxAngle) {
-			armSwingDirection = false; // 최대 각도에 도달하면 반전
-		}
-	}
-	else {
-		armSwingAngle -= armSwingSpeed;
-		if (armSwingAngle < -armSwingMaxAngle) {
-			armSwingDirection = true; // 최소 각도에 도달하면 반전
-		}
+		if (armSwingAngle < -armSwingMaxAngle) armSwingDirection = true;
 	}
 
 	glutPostRedisplay();
@@ -747,7 +792,9 @@ void Update(int value) {
 
 
 
+
 int main(int argc, char** argv) {
+	
 	srand(time(NULL));
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
@@ -770,6 +817,7 @@ int main(int argc, char** argv) {
 	glutKeyboardFunc(Keyboard);
 	glutTimerFunc(16, Update, 0); // 60fps로 업데이트 함수 호출
 	glEnable(GL_DEPTH_TEST);
+
 
 	glutMainLoop();
 	return 0;
