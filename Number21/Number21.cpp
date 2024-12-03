@@ -13,8 +13,10 @@
 
 #define WIDTH 600
 #define HEIGHT 600
-GLfloat rotationX = 0.0f;
+GLfloat rotationX = 30.0f;
 GLfloat rotationY = 0.0f;
+GLfloat movementOffset = 0.0f; // 0번과 1번 면의 이동 거리
+bool opening = false;          // 무대 열림 여부
 
 struct Vertex {
 	float x, y, z;
@@ -152,7 +154,7 @@ public:
 		};
 		glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
 		glEnableVertexAttribArray(1);
 
 		// 각 면에 대한 EBO 설정
@@ -242,7 +244,7 @@ void Render() {
 
 	// 뷰 행렬 설정 (카메라 위치)
 	glm::mat4 view = glm::lookAt(
-		glm::vec3(0.0f, 0.0f, 1.0f),  // 카메라 위치
+		glm::vec3(0.0f, 0.0f, 2.0f),  // 카메라 위치
 		glm::vec3(0.0f, 0.0f, 0.0f),  // 카메라가 바라보는 지점
 		glm::vec3(0.0f, 1.0f, 0.0f)   // 월드업 벡터 (y축)
 	);
@@ -250,19 +252,33 @@ void Render() {
 	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
 
 
-
 	// 모델 행렬 설정 (큐브)
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-	model = glm::rotate(model, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // Y축 자전 반영
-	model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 자전 반영
+	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f)); // Y축 자전 반영
+	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 자전 반영
 	unsigned int modelLocation = glGetUniformLocation(shader->programID, "model");
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+
 
 	// 선택된 면만 렌더링
 	for (int i = 2; i < 7; ++i) {
 		cube->RenderFace(i);  // 모든 면 렌더링 (필요한 경우 특정 면만 렌더링할 수 있음)
 	}
+
+	// 0번 면 이동
+	model = glm::translate(glm::mat4(1.0f), glm::vec3(+movementOffset, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f)); // Y축 자전 반영
+	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 자전 반영
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+	cube->RenderFace(0);
+
+	// 1번 면 이동
+	model = glm::translate(glm::mat4(1.0f), glm::vec3(-movementOffset, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f)); // Y축 자전 반영
+	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 자전 반영
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+	cube->RenderFace(1);
+
 
 
 	// 축 렌더링 (뷰와 투영을 그대로 적용)
@@ -271,6 +287,28 @@ void Render() {
 	axis->Render();
 
 	glutSwapBuffers();
+}
+
+
+// 키 입력 처리 함수
+void Keyboard(unsigned char key, int x, int y) {
+	if (key == 'o' || key == 'O') {
+		opening = !opening; // 무대 열기/닫기 토글
+	}
+}
+
+// 애니메이션 업데이트 함수
+void Update(int value) {
+	// 무대 열림 애니메이션
+	if (opening && movementOffset < 2.0f) {
+		movementOffset += 0.01f;
+	}
+	else if (!opening && movementOffset > 2.0f) {
+		movementOffset -= 0.01f;
+	}
+
+	glutPostRedisplay();
+	glutTimerFunc(16, Update, 0); // 약 60fps
 }
 
 
@@ -293,8 +331,11 @@ int main(int argc, char** argv) {
 	shader = new Shader("vertex.glsl", "fragment.glsl");
 
 	glutDisplayFunc(Render);
+	glutKeyboardFunc(Keyboard);
+	glutTimerFunc(16, Update, 0); // 60fps로 업데이트 함수 호출
 	glEnable(GL_DEPTH_TEST);
 
 	glutMainLoop();
 	return 0;
 }
+
