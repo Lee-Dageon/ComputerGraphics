@@ -416,6 +416,9 @@ void RenderRobotCube() {
 
 	// 왼쪽 팔
 	glm::mat4 leftArmModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(-0.05f, 0.0f, 0.0f)); // 본체 왼쪽
+	leftArmModel = glm::translate(leftArmModel, glm::vec3(0.05f, 0.0f, 0.0f));  // 팔의 기준을 몸체 중심으로 이동
+	leftArmModel = glm::rotate(leftArmModel, glm::radians(bodyRotationY), glm::vec3(0.0f, 1.0f, 0.0f)); // 몸체 중심 기준 회전
+	leftArmModel = glm::translate(leftArmModel, glm::vec3(-0.05f, 0.0f, 0.0f)); // 다시 원래 팔 위치로 이동
 	leftArmModel = glm::rotate(leftArmModel, glm::radians(-armSwingAngle), glm::vec3(1.0f, 0.0f, 0.0f)); // 스윙
 	leftArmModel = glm::rotate(leftArmModel, glm::radians(-45.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Z축 기준 반시계 방향으로 회전
 	leftArmModel = glm::scale(leftArmModel, glm::vec3(robotscale * 0.2f, robotscale * 0.8f, robotscale * 0.2f)); // 팔 크기 조정
@@ -426,6 +429,9 @@ void RenderRobotCube() {
 
 	// 오른쪽 팔
 	glm::mat4 rightArmModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(+0.05f, 0.0f, 0.0f)); // 본체 오른쪽
+	rightArmModel = glm::translate(rightArmModel, glm::vec3(-0.05f, 0.0f, 0.0f));  // 팔의 기준을 몸체 중심으로 이동
+	rightArmModel = glm::rotate(rightArmModel, glm::radians(bodyRotationY), glm::vec3(0.0f, 1.0f, 0.0f)); // 몸체 중심 기준 회전
+	rightArmModel = glm::translate(rightArmModel, glm::vec3(0.05f, 0.0f, 0.0f)); // 다시 원래 팔 위치로 이동
 	rightArmModel = glm::rotate(rightArmModel, glm::radians(armSwingAngle), glm::vec3(1.0f, 0.0f, 0.0f)); // 스윙
 	rightArmModel = glm::rotate(rightArmModel, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Z축 기준 시계 방향으로 회전
 	rightArmModel = glm::scale(rightArmModel, glm::vec3(robotscale * 0.2f, robotscale * 0.8f, robotscale * 0.2f)); // 팔 크기 조정
@@ -446,7 +452,7 @@ void RenderRobotCube() {
 
 	// 오른쪽 다리
 	glm::mat4 rightLegModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(robotscale * 0.25f, - 0.06f, 0.0f)); // 본체 아래 오른쪽
-	rightLegModel = glm::rotate(rightLegModel, glm::radians(-armSwingAngle), glm::vec3(1.0f, 0.0f, 0.0f)); // 스윙
+	 rightLegModel = glm::rotate(rightLegModel, glm::radians(-armSwingAngle), glm::vec3(1.0f, 0.0f, 0.0f)); // 스윙
 	rightLegModel = glm::scale(rightLegModel, glm::vec3(robotscale * 0.2f, robotscale, robotscale * 0.2f)); // 다리 크기 조정
 	glm::vec3 rightLegColor(0.2f, 0.5f, 0.2f); // 초록색 계열
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(rightLegModel));
