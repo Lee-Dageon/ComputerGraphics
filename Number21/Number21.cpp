@@ -13,29 +13,12 @@
 
 #define WIDTH 600
 #define HEIGHT 600
-GLfloat rotationX = 10.0f;
-GLfloat rotationY = 10.0f;
-bool cullFaceEnabled = false;
-bool yRotationEnabled = false;
-
-
-GLfloat rotationSpeed = 1.0f;
-GLfloat frontFaceAngle = 0.0f; // 앞면 회전 각도
-void Keyboard(unsigned char key, int x, int y);
-void Timer(int value);
-
-
-//앞면 회전
-bool frontFaceMovingEnabled = false;  // 앞면 이동 활성화 여부
-float slideDistance = 0.0f;          // 현재 슬라이드 거리
-float maxSlideDistance = 1.0f;       // 최대 슬라이드 거리
-float slideSpeed = 0.05f;            // 슬라이드 속도
-
+GLfloat rotationX = 0.0f;
+GLfloat rotationY = 0.0f;
 
 struct Vertex {
 	float x, y, z;
 };
-
 
 class Shader {		//셰이더 불러오는 클래스
 public:
@@ -102,192 +85,99 @@ private:
 	}
 };
 
-
 class Cube {
 public:
 	std::vector<Vertex> vertices;
-	std::vector<GLuint> indices;
-	GLuint VAO, VBO, EBO, colorVBO;
-	GLuint shaderProgramID;  // 셰이더 프로그램 ID를 저장할 변수 추가
+	GLuint VAO, VBO, EBO[7], colorVBO;
+	std::vector<GLuint> faceIndices[7];  // 여섯 개의 면을 위한 인덱스
 
-	Cube(GLuint shaderProgram) {
-		shaderProgramID = shaderProgram;  // 셰이더 프로그램 ID 저장
-		LoadOBJ("cube.obj");
+	Cube() {
+		DefineVertices();
+		DefineFaceIndices();
 		InitBuffer();
 	}
 
-	bool LoadOBJ(const std::string& filename) {
-		std::ifstream file(filename);
-		if (!file.is_open()) {
-			std::cerr << "Failed to open OBJ file: " << filename << std::endl;
-			return false;
-		}
+	void DefineVertices() {
+		// 큐브의 정점을 정의합니다.
+		vertices = {
+			{ -0.5f, -0.5f, -0.5f },  // 0: 왼쪽 아래 뒤
+			{ 0.5f, -0.5f, -0.5f },   // 1: 오른쪽 아래 뒤
+			{ 0.5f,  0.5f, -0.5f },   // 2: 오른쪽 위 뒤
+			{ -0.5f,  0.5f, -0.5f },  // 3: 왼쪽 위 뒤
+			{ -0.5f, -0.5f,  0.5f },  // 4: 왼쪽 아래 앞
+			{ 0.5f, -0.5f,  0.5f },   // 5: 오른쪽 아래 앞
+			{ 0.5f,  0.5f,  0.5f },   // 6: 오른쪽 위 앞
+			{ -0.5f,  0.5f,  0.5f }   // 7: 왼쪽 위 앞
+		};
+	}
 
-		std::string line;
-		while (std::getline(file, line)) {
-			std::istringstream ss(line);
-			std::string prefix;
-			ss >> prefix;
+	void DefineFaceIndices() {
+		// 앞면의 첫 번째 삼각형
+		faceIndices[0] = { 4, 5, 6 };
 
-			if (prefix == "v") {
-				Vertex vertex;
-				ss >> vertex.x >> vertex.y >> vertex.z;
-				vertices.push_back(vertex);
-			}
-			else if (prefix == "f") {
-				GLuint index;
-				for (int i = 0; i < 3; i++) {
-					ss >> index;
-					indices.push_back(index - 1);
-				}
-			}
-		}
+		// 앞면의 두 번째 삼각형
+		faceIndices[1] = { 4, 6, 7 };
 
-		file.close();
-		return true;
+		// 나머지 면
+		faceIndices[2] = { 0, 1, 2, 0, 2, 3 };  // 뒷면
+		faceIndices[3] = { 3, 2, 6, 3, 6, 7 };  // 윗면
+		faceIndices[4] = { 0, 1, 5, 5, 4, 0 };  // 아랫면
+		faceIndices[5] = { 0, 3, 7, 7, 4, 0 };  // 왼쪽 면
+		faceIndices[6] = { 1, 2, 6, 6, 5, 1 };  // 오른쪽 면
 	}
 
 
 	void InitBuffer() {
-    // 정점과 인덱스 분리
-    std::vector<Vertex> frontVertices;
-    std::vector<GLuint> frontIndices;
-
-    for (size_t i = 0; i < indices.size(); i += 3) {
-        if (IsFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
-            for (size_t j = 0; j < 3; ++j) {
-                frontVertices.push_back(vertices[indices[i + j]]);
-                frontIndices.push_back(frontIndices.size());
-            }
-        }
-    }
-
-    // 앞면 VAO, VBO, EBO 생성
-    glGenVertexArrays(1, &frontVAO);
-    glGenBuffers(1, &frontVBO);
-    glGenBuffers(1, &frontEBO);
-
-    glBindVertexArray(frontVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, frontVBO);
-    glBufferData(GL_ARRAY_BUFFER, frontVertices.size() * sizeof(Vertex), frontVertices.data(), GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, frontEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, frontIndices.size() * sizeof(GLuint), frontIndices.data(), GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-
-    // 나머지 면 처리 (기존처럼)
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-}
-
-
-	void Render() {
-		glUseProgram(shaderProgramID); // 셰이더 프로그램 사용
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glGenBuffers(7, EBO);  // 여섯 개의 EBO 생성
+		glGenBuffers(1, &colorVBO);
 
 		glBindVertexArray(VAO);
 
-		// 1. 앞면만 별도로 슬라이드 적용하여 렌더링
-		if (frontFaceMovingEnabled) {
-			// 슬라이딩 변환 행렬 생성
-			glm::mat4 leftSlideModel = glm::translate(glm::mat4(1.0f), glm::vec3(slideDistance, 0.0f, 0.0f));
-			glm::mat4 rightSlideModel = glm::translate(glm::mat4(1.0f), glm::vec3(-slideDistance, 0.0f, 0.0f));
+		// VBO 설정
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+		glEnableVertexAttribArray(0);
 
-			unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "model");
+		// 색상 VBO 설정
+		GLfloat colors[] = {
+			1.0f, 0.0f, 0.0f, // 빨강
+			0.0f, 1.0f, 0.0f, // 초록
+			0.0f, 0.0f, 1.0f, // 파랑
+			1.0f, 1.0f, 0.0f, // 노랑
+			1.0f, 0.0f, 1.0f, // 자홍
+			0.0f, 1.0f, 1.0f  // 청록
+		};
+		glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(1);
 
-			for (size_t i = 0; i < indices.size(); i += 3) {
-				if (IsLeftFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
-					glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(leftSlideModel));
-					glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(i * sizeof(GLuint)), 0);
-				}
-				else if (IsRightFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
-					glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(rightSlideModel));
-					glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(i * sizeof(GLuint)), 0);
-				}
-			}
-		}
-
-		// 2. 나머지 면 렌더링 (기본 변환 적용)
-		glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
-
-		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "model");
-		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
-
-		for (size_t i = 0; i < indices.size(); i += 3) {
-			if (!IsFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
-				glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(i * sizeof(GLuint)), 0);
-			}
+		// 각 면에 대한 EBO 설정
+		for (int i = 0; i < 7; i++) {
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[i]);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, faceIndices[i].size() * sizeof(GLuint), faceIndices[i].data(), GL_STATIC_DRAW);
 		}
 
 		glBindVertexArray(0);
 	}
 
-
-
-	bool IsFrontFace(GLuint idx1, GLuint idx2, GLuint idx3) {
-		// 앞면은 정점 1, 2, 3과 1, 3, 4로 구성됨 (예시)
-		return (idx1 == 0 && idx2 == 1 && idx3 == 2) ||
-			(idx1 == 0 && idx2 == 2 && idx3 == 3);
-	}
-
-	bool IsLeftFrontFace(GLuint idx1, GLuint idx2, GLuint idx3) {
-		return (idx1 == 0 && idx2 == 1 && idx3 == 2);
-	}
-
-	bool IsRightFrontFace(GLuint idx1, GLuint idx2, GLuint idx3) {
-		return (idx1 == 0 && idx2 == 2 && idx3 == 3);
-	}
-
-	void SlideFrontFace(float distance) {
-		for (size_t i = 0; i < indices.size(); i += 3) {
-			// 인덱스 0, 1, 2로 구성된 삼각형은 왼쪽으로 이동
-			if (IsLeftFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
-				for (size_t j = 0; j < 3; ++j) {
-					GLuint index = indices[i + j];
-					vertices[index].x += distance;  // 왼쪽으로 이동
-				}
-			}
-			// 인덱스 0, 2, 3으로 구성된 삼각형은 오른쪽으로 이동
-			else if (IsRightFrontFace(indices[i], indices[i + 1], indices[i + 2])) {
-				for (size_t j = 0; j < 3; ++j) {
-					GLuint index = indices[i + j];
-					vertices[index].x -= distance;  // 오른쪽으로 이동
-				}
-			}
+	void RenderFace(int faceIndex) {
+		if (faceIndex < 0 || faceIndex >= 8) {
+			std::cerr << "Invalid face index: " << faceIndex << std::endl;
+			return;
 		}
 
-		// 정점 데이터를 VBO에 업데이트
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(Vertex), 
-			vertices.data());
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(VAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[faceIndex]);
+		glDrawElements(GL_TRIANGLES, faceIndices[faceIndex].size(), GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
 	}
+};
 
-};  // 큐브 불러오는 클래스 끝
-
-
-
-
-class Axis {        // 축 불러오는 클래스
+class Axis {		//축 불러오는 클래스
 public:
 	GLuint VAO, VBO;
 
@@ -297,28 +187,18 @@ public:
 
 	void InitBuffer() {
 		GLfloat axisVertices[] = {
-			// X축
 			-1.0f, 0.0f, 0.0f,
 			 0.0f, 0.0f, 0.0f,
 
 			 1.0f, 0.0f, 0.0f,
 			 0.0f, 0.0f, 0.0f,
 
-			 // Y축
-			  0.0f, -1.0f, 0.0f,
-			  0.0f, 0.0f, 0.0f,
+			 0.0f, -1.0f, 0.0f,
+			 0.0f, 0.0f, 0.0f,
 
-			  0.0f, 1.0f, 0.0f,
-			  0.0f, 0.0f, 0.0f,
-
-			  // Z축
-			   0.0f, 0.0f, -1.0f,
-			   0.0f, 0.0f, 0.0f,
-
-			   0.0f, 0.0f, 1.0f,
-			   0.0f, 0.0f, 0.0f
+			 0.0f, 1.0f, 0.0f,
+			 0.0f, 0.0f, 0.0f
 		};
-
 
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
@@ -338,68 +218,63 @@ public:
 
 	void Render() {
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_LINES, 0, 6);  // 총 6개의 라인 (각 축 2개의 포인트)
+		glDrawArrays(GL_LINES, 0, 4);
 		glBindVertexArray(0);
 	}
-};        // 축 불러오는 클래스
+};		//축 불러오는 클래스
+
 
 
 Cube* cube;
 Axis* axis;
 Shader* shader;
 
-glm::mat4 projection, view;
-
 
 void Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	shader->Use();
 
-	// 은면 제거 활성화 여부에 따른 설정
-	if (cullFaceEnabled) {
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-	}
-	else {
-		glDisable(GL_CULL_FACE);
-	}
 
-	// 원근 투영 행렬
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / HEIGHT, 0.1f, 100.0f);
+	// 투영 행렬 설정 (원근 투영)
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+	unsigned int projectionLocation = glGetUniformLocation(shader->programID, "projection");
+	glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
 
-	// 카메라 뷰 행렬
+	// 뷰 행렬 설정 (카메라 위치)
 	glm::mat4 view = glm::lookAt(
-		glm::vec3(0.0f, 0.0f, -2.0f), // 카메라 위치 (멀리서 큐브를 바라봄)
-		glm::vec3(0.0f, 0.0f, 0.0f), // 타겟 위치 (큐브 중심)
-		glm::vec3(0.0f, 1.0f, 0.0f)  // 업 벡터 (Y축 방향)
+		glm::vec3(0.0f, 0.0f, 1.0f),  // 카메라 위치
+		glm::vec3(0.0f, 0.0f, 0.0f),  // 카메라가 바라보는 지점
+		glm::vec3(0.0f, 1.0f, 0.0f)   // 월드업 벡터 (y축)
 	);
-
-	// 큐브 모델 행렬
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
-
-	// 셰이더로 행렬 전송
-	unsigned int projLocation = glGetUniformLocation(shader->programID, "projection");
-	glUniformMatrix4fv(projLocation, 1, GL_FALSE, glm::value_ptr(projection));
-
 	unsigned int viewLocation = glGetUniformLocation(shader->programID, "view");
 	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
 
+
+
+	// 모델 행렬 설정 (큐브)
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+	model = glm::rotate(model, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // Y축 자전 반영
+	model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Y축 자전 반영
 	unsigned int modelLocation = glGetUniformLocation(shader->programID, "model");
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 
+	// 선택된 면만 렌더링
+	for (int i = 2; i < 7; ++i) {
+		cube->RenderFace(i);  // 모든 면 렌더링 (필요한 경우 특정 면만 렌더링할 수 있음)
+	}
 
-	// 큐브 렌더링
-	cube->Render();
 
-	// 축 렌더링
+	// 축 렌더링 (뷰와 투영을 그대로 적용)
 	model = glm::mat4(1.0f);
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	axis->Render();
 
 	glutSwapBuffers();
 }
+
+
+
 
 
 int main(int argc, char** argv) {
@@ -413,68 +288,13 @@ int main(int argc, char** argv) {
 	glewInit();
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-	shader = new Shader("vertex.glsl", "fragment.glsl");
-	// Cube 객체 생성 시 셰이더 프로그램 ID를 전달
-	cube = new Cube(shader->programID);
+	cube = new Cube();
 	axis = new Axis();
+	shader = new Shader("vertex.glsl", "fragment.glsl");
 
 	glutDisplayFunc(Render);
-	glutKeyboardFunc(Keyboard);  // 키보드 콜백 함수 등록
 	glEnable(GL_DEPTH_TEST);
-	glutTimerFunc(0, Timer, 0);  // 타이머 함수 등록
+
 	glutMainLoop();
 	return 0;
 }
-
-void Timer(int value) {
-	if (frontFaceMovingEnabled) {
-		static float slideDistance = 0.0f;  // 누적 슬라이드 거리
-		float maxSlideDistance = 1.0f;     // 최대 슬라이드 거리
-		float slideSpeed = 0.02f;          // 슬라이드 속도
-
-		if (slideDistance < maxSlideDistance) {
-			cube->SlideFrontFace(slideSpeed);   // 슬라이드 실행
-			slideDistance += slideSpeed; // 누적 거리 증가
-		}
-		else {
-			frontFaceMovingEnabled = false; // 슬라이드 종료
-		}
-	}
-
-	glutPostRedisplay();           // 화면 갱신 요청
-	glutTimerFunc(16, Timer, 0);   // 약 60 FPS로 타이머 호출
-}
-
-
-// 키보드 입력 처리 함수
-void Keyboard(unsigned char key, int x, int y) {
-
-	switch (key) {
-
-	case 'h':
-	case 'H':
-		cullFaceEnabled = !cullFaceEnabled;
-		std::cout << "Cull Face " << (cullFaceEnabled ? "Enabled" : "Disabled") << std::endl;
-		glutPostRedisplay();
-		break;
-
-	case 't':
-	case 'T':
-		frontFaceMovingEnabled = !frontFaceMovingEnabled;
-		std::cout << "Front Face Rotation " << (frontFaceMovingEnabled ? "Enabled" : "Disabled") << std::endl;
-		break;
-
-	case 'o':  // 슬라이드 애니메이션 활성화
-	case 'O':
-		if (!frontFaceMovingEnabled) {
-			frontFaceMovingEnabled = true;  // 슬라이드 시작
-		}
-		break;
-
-
-	default:
-		break;
-	}
-}
-
