@@ -226,11 +226,204 @@ public:
 	}
 };		//축 불러오는 클래스
 
+class SmallCube {
+public:
+	std::vector<Vertex> vertices;
+	std::vector<GLuint> indices;
+	GLuint VAO, VBO, EBO, colorVBO;
 
+	SmallCube() {
+		LoadOBJ("cube.obj");
+		InitBuffer();
+	}
+
+	bool LoadOBJ(const std::string& filename) {
+		std::ifstream file(filename);
+		if (!file.is_open()) {
+			std::cerr << "Failed to open OBJ file: " << filename << std::endl;
+			return false;
+		}
+
+		std::string line;
+		while (std::getline(file, line)) {
+			std::istringstream ss(line);
+			std::string prefix;
+			ss >> prefix;
+
+			if (prefix == "v") {
+				Vertex vertex;
+				ss >> vertex.x >> vertex.y >> vertex.z;
+				vertices.push_back(vertex);
+			}
+			else if (prefix == "f") {
+				GLuint index;
+				for (int i = 0; i < 3; i++) {
+					ss >> index;
+					indices.push_back(index - 1);
+				}
+			}
+		}
+
+		file.close();
+		return true;
+	}
+
+	void InitBuffer() {
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glGenBuffers(1, &EBO);
+
+		glBindVertexArray(VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
+
+		glBindVertexArray(0);
+	}
+
+	void Render() {
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+};		//큐브 불러오는 클래스
+
+class RobotCube {
+public:
+	std::vector<Vertex> vertices;
+	std::vector<GLuint> indices;
+	GLuint VAO, VBO, EBO, colorVBO;
+
+	RobotCube() {
+		LoadOBJ("cube.obj");
+		InitBuffer();
+	}
+
+	bool LoadOBJ(const std::string& filename) {
+		std::ifstream file(filename);
+		if (!file.is_open()) {
+			std::cerr << "Failed to open OBJ file: " << filename << std::endl;
+			return false;
+		}
+
+		std::string line;
+		while (std::getline(file, line)) {
+			std::istringstream ss(line);
+			std::string prefix;
+			ss >> prefix;
+
+			if (prefix == "v") {
+				Vertex vertex;
+				ss >> vertex.x >> vertex.y >> vertex.z;
+				vertices.push_back(vertex);
+			}
+			else if (prefix == "f") {
+				GLuint index;
+				for (int i = 0; i < 3; i++) {
+					ss >> index;
+					indices.push_back(index - 1);
+				}
+			}
+		}
+
+		file.close();
+		return true;
+	}
+
+	void InitBuffer() {
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glGenBuffers(1, &EBO);
+
+		glBindVertexArray(VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
+
+		glBindVertexArray(0);
+	}
+
+	void Render() {
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+};
 
 Cube* cube;
 Axis* axis;
 Shader* shader;
+SmallCube* smallcube;
+// RobotCube 객체를 관리
+RobotCube* robotCube;
+
+// SmallCube를 관리하는 객체 배열
+std::vector<SmallCube*> smallCubes;
+
+// SmallCube 크기와 위치 설정
+float smallCubeSize = 0.1f; // SmallCube 크기
+float robotscale = 0.2f;
+
+// SmallCube 위치를 저장하는 배열
+glm::vec3 positions[3];
+
+// RobotCube 초기 위치
+glm::vec3 robotPosition(0.0f, 0.0f, 0.0f);
+
+void RenderRobotCube() {
+	// 본체
+	glm::mat4 model = glm::translate(glm::mat4(1.0f), robotPosition); // RobotCube의 위치
+	model = glm::scale(model, glm::vec3(robotscale)); // 본체 크기 조정
+	unsigned int modelLocation = glGetUniformLocation(shader->programID, "model");
+	unsigned int faceColorLocation = glGetUniformLocation(shader->programID, "faceColor");
+
+	// 본체 색상
+	glm::vec3 robotBodyColor(0.8f, 0.8f, 0.2f); // 밝은 노란색
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+	glUniform3fv(faceColorLocation, 1, glm::value_ptr(robotBodyColor));
+	robotCube->Render();
+
+	// 머리
+	glm::mat4 headModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(0.0f, 0.1f, 0.0f)); // 본체 위로 이동
+	headModel = glm::scale(headModel, glm::vec3(robotscale*0.8)); // 머리 크기 조정
+	glm::vec3 robotHeadColor(0.2f, 0.5f, 0.8f); // 파란색 계열
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(headModel));
+	glUniform3fv(faceColorLocation, 1, glm::value_ptr(robotHeadColor));
+	robotCube->Render();
+}
+
+
+
+// SmallCube 위치를 초기화하는 함수
+void InitializeSmallCubes() {
+	// 랜덤 초기화를 위해 시드 설정
+	std::srand(static_cast<unsigned int>(std::time(0)));
+
+	// Cube 아랫면의 범위: (-0.5, 0.5) x (-0.5, 0.5)에서 SmallCube를 배치
+	for (int i = 0; i < 3; ++i) {
+		float x = -0.4f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (0.8f))); // -0.5 ~ 0.5
+		float z = -0.4f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (0.8f))); // -0.5 ~ 0.5
+		positions[i] = glm::vec3(x, -0.5f + smallCubeSize / 2, z); // 랜덤 위치 설정
+
+		// SmallCube 생성
+		SmallCube* cube = new SmallCube();
+		smallCubes.push_back(cube);
+	}
+}
+
 
 
 void Render() {
@@ -257,7 +450,7 @@ void Render() {
 		glm::vec3(1.0f, 1.0f, 0.0f), // 3번 면: 노랑
 		glm::vec3(1.0f, 0.0f, 1.0f), // 4번 면: 자홍
 		glm::vec3(0.0f, 1.0f, 1.0f), // 5번 면: 청록
-		glm::vec3(0.5f, 0.5f, 0.5f)  // 6번 면: 회색
+		glm::vec3(0.7f, 0.6f, 1.0f)  // 6번 면: 보라
 	};
 	
 	unsigned int viewLocation = glGetUniformLocation(shader->programID, "view");
@@ -273,14 +466,14 @@ void Render() {
 	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	glUniform3fv(faceColorLocation, 1, glm::value_ptr(faceColors[0])); // 0번 면 색상
-	cube->RenderFace(0);
+	//cube->RenderFace(0);
 
 	model = glm::translate(glm::mat4(1.0f), glm::vec3(-movementOffset, 0.0f, 0.0f));
 	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
 	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	glUniform3fv(faceColorLocation, 1, glm::value_ptr(faceColors[1])); // 1번 면 색상
-	cube->RenderFace(1);
+	//cube->RenderFace(1);
 
 	// 나머지 면 렌더링 (2번 ~ 6번 면)
 	for (int i = 2; i < 7; ++i) {
@@ -300,6 +493,20 @@ void Render() {
 	model = glm::mat4(1.0f); // 축은 이동/회전 없이 기본 상태
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	axis->Render();
+
+	// SmallCube 렌더링 - 회색으로 설정
+	glm::vec3 grayColor(0.5f, 0.5f, 0.5f); // 회색
+	glUniform3fv(faceColorLocation, 1, glm::value_ptr(grayColor)); // SmallCube 색상 설정
+
+	// SmallCube 렌더링
+	for (size_t i = 0; i < smallCubes.size(); ++i) {
+		model = glm::translate(glm::mat4(1.0f), positions[i]); // 각 SmallCube 위치로 이동
+		model = glm::scale(model, glm::vec3(smallCubeSize));  // 크기 조정
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+		smallCubes[i]->Render();
+	}
+
+	RenderRobotCube(); // RobotCube 렌더링
 
 	glutSwapBuffers();
 }
@@ -346,7 +553,10 @@ int main(int argc, char** argv) {
 	cube = new Cube();
 	axis = new Axis();
 	shader = new Shader("vertex.glsl", "fragment.glsl");
+	robotCube = new RobotCube(); // RobotCube 객체 생성
 
+	InitializeSmallCubes();
+	smallcube = new SmallCube();
 	glutDisplayFunc(Render);
 	glutKeyboardFunc(Keyboard);
 	glutTimerFunc(16, Update, 0); // 60fps로 업데이트 함수 호출
