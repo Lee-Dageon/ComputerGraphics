@@ -370,7 +370,7 @@ SmallCube* smallcube;
 // RobotCube 객체를 관리
 RobotCube* robotCube;
 
-glm::vec3 robotPosition(0.0f, -0.3f, 0.0f); // 로봇의 초기 위치
+glm::vec3 robotPosition(0.0f, -0.41f, 0.0f); // 로봇의 초기 위치
 float robotSpeed = 0.01f; // 이동 속도
 float robotDirection = 1.0f; // 이동 방향 (1: 오른쪽, -1: 왼쪽)
 float movementLimit = 0.45f; // 이동 가능한 최대 범위
@@ -408,7 +408,7 @@ bool isJumping = false;        // 로봇이 점프 중인지 여부
 float jumpVelocity = 0.02f;  // 초기 점프 속도 (더 낮게 설정)
 float gravity = 0.001f;      // 중력 값 감소 (더 느린 하강 속도)
 
-float groundHeight = -0.3f;    // 로봇의 초기 y축 위치
+float groundHeight = -0.41f;    // 로봇의 초기 y축 위치
 float obstacleHeight = 0.1f;   // 장애물의 높이 (예: 0.2f)
 
 bool isColliding = false;
@@ -535,8 +535,8 @@ void InitializeSmallCubes() {
 
 	// Cube 아랫면의 범위: (-0.5, 0.5) x (-0.5, 0.5)에서 SmallCube를 배치
 	for (int i = 0; i < 3; ++i) {
-		float x = -0.4f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (0.8f))); // -0.5 ~ 0.5
-		float z = -0.4f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (0.8f))); // -0.5 ~ 0.5
+		float x = -0.5f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (0.5f))); // -0.5 ~ 0.5
+		float z = -0.5f + static_cast<float>(std::rand()) / (static_cast<float>(RAND_MAX / (0.5f))); // -0.5 ~ 0.5
 		positions[i] = glm::vec3(x, -0.5f + smallCubeSize / 2, z); // 랜덤 위치 설정
 
 		// SmallCube 생성
@@ -587,14 +587,14 @@ void Render() {
 	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	glUniform3fv(faceColorLocation, 1, glm::value_ptr(faceColors[0])); // 0번 면 색상
-	//cube->RenderFace(0);
+	cube->RenderFace(0);
 
 	model = glm::translate(glm::mat4(1.0f), glm::vec3(-movementOffset, 0.0f, 0.0f));
 	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
 	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	glUniform3fv(faceColorLocation, 1, glm::value_ptr(faceColors[1])); // 1번 면 색상
-	//cube->RenderFace(1);
+	cube->RenderFace(1);
 
 	// 나머지 면 렌더링 (2번 ~ 6번 면)
 	for (int i = 2; i < 7; ++i) {
@@ -639,6 +639,7 @@ void Keyboard(unsigned char key, int x, int y) {
 	if (key == 'o' || key == 'O') {
 		opening = !opening; // 무대 열기/닫기 토글
 	}
+
 	else if (key == 's' || key == 'S') {
 		robotDirection = 0.0f;      // X축 이동 멈춤
 		robotDirectionZ = 1.0f;     // Z축 양의 방향으로 이동
@@ -731,6 +732,15 @@ void Keyboard(unsigned char key, int x, int y) {
 
 
 void Update(int value) {
+
+
+	if (opening && movementOffset < 2.0f) {
+		movementOffset += 0.01f;
+	}
+	else if (!opening && movementOffset > 2.0f) {
+		movementOffset -= 0.01f;
+	}
+
 	isColliding = false; // 매 프레임 초기화
 	// 충돌 감지
 
