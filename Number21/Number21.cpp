@@ -490,7 +490,6 @@ void RenderRobotCube() {
 	glUniform3fv(faceColorLocation, 1, glm::value_ptr(rightArmColor));
 	robotCube->Render();
 
-
 	// 왼쪽 다리
 	glm::mat4 leftLegModel = glm::translate(glm::mat4(1.0f), robotPosition + glm::vec3(-robotscale * 0.25f, - 0.06f, 0.0f)); // 본체 아래 왼쪽
 	leftLegModel = glm::translate(leftLegModel, glm::vec3(robotscale * 0.25f, 0.0f, 0.0f));  // 팔의 기준을 몸체 중심으로 이동
@@ -543,7 +542,6 @@ void InitializeSmallCubes() {
 		smallCubes.push_back(cube);
 	}
 }
-
 
 
 void Render() {
