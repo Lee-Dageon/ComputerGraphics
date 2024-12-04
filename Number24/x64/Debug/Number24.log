@@ -1,0 +1,7 @@
+﻿  Number24.cpp
+C:\ComputerGraphics\ComputerGraphics\Number24\Number24.cpp(163,44): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\ComputerGraphics\ComputerGraphics\Number24\Number24.cpp(278,44): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\ComputerGraphics\ComputerGraphics\Number24\Number24.cpp(427,12): warning C4244: '인수': 'time_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  Number24.vcxproj -> C:\ComputerGraphics\ComputerGraphics\x64\Debug\Number24.exe
+  'pwsh.exe' is not recognized as an internal or external command,
+  operable program or batch file.

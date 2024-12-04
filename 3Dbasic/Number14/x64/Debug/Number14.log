@@ -1,7 +1,7 @@
 ﻿  Number14.cpp
-C:\ComputerGraphics\3D\3D\Number14\Number14.cpp(163,44): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\ComputerGraphics\3D\3D\Number14\Number14.cpp(278,44): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\ComputerGraphics\3D\3D\Number14\Number14.cpp(427,12): warning C4244: '인수': 'time_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  Number14.vcxproj -> C:\ComputerGraphics\3D\3D\x64\Debug\Number14.exe
+C:\ComputerGraphics\ComputerGraphics\3Dbasic\Number14\Number14.cpp(163,44): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\ComputerGraphics\ComputerGraphics\3Dbasic\Number14\Number14.cpp(278,44): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\ComputerGraphics\ComputerGraphics\3Dbasic\Number14\Number14.cpp(427,12): warning C4244: '인수': 'time_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  Number14.vcxproj -> C:\ComputerGraphics\ComputerGraphics\3Dbasic\x64\Debug\Number14.exe
   'pwsh.exe' is not recognized as an internal or external command,
   operable program or batch file.
