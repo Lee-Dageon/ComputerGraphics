@@ -393,7 +393,6 @@ float cameraRadius = 1.8f;                // 카메라와 대상 간 거리 (공전용)
 float cameraAngleY = 0.0f;                // Y축 회전 각도 (라디안)
 
 
-
 // SmallCube를 관리하는 객체 배열
 std::vector<SmallCube*> smallCubes;
 
