@@ -379,48 +379,39 @@ void Render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	shader->Use();
 
+	// 1. 모델, 뷰, 투영 행렬 설정
 	glm::mat4 model = glm::mat4(1.0f);
-
-	// 큐브 렌더링 (크기 0.5배 축소, X/Y축 회전 적용)
-	// 이동 변환 행렬 생성 및 셰이더로 전달
-
 	model = glm::translate(model, glm::vec3(translationX, translationY, 0.0f));
 	model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-	model = glm::rotate(model, glm::radians(30.0f + rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(-30.0f + rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
-	unsigned int modelLocation = glGetUniformLocation(shader->programID, "trans");
-	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
-	if (drawCube) {
-		cube->Render();
-	}
+	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
 
-	// 고정된 축 렌더링 (원래 크기와 위치로 렌더링)
-	model = glm::mat4(1.0f);
-	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / HEIGHT, 0.1f, 100.0f);
+
+	glUniformMatrix4fv(glGetUniformLocation(shader->programID, "model"), 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(glGetUniformLocation(shader->programID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(shader->programID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+	// 2. 조명 관련 uniform 변수 설정
+	glm::vec3 lightPos(10.0f, 1.0f, 2.0f); // 광원의 위치
+	glm::vec3 lightColor(1.0f, 1.0f, 1.0f); // 광원의 색상 (흰색)
+	glm::vec3 objectColor(1.0f, 0.5f, 0.31f); // 물체의 색상 (주황색)
+	glm::vec3 viewPos(0.0f, 0.0f, 3.0f); // 카메라 위치
+
+	glUniform3fv(glGetUniformLocation(shader->programID, "lightPos"), 1, glm::value_ptr(lightPos));
+	glUniform3fv(glGetUniformLocation(shader->programID, "lightColor"), 1, glm::value_ptr(lightColor));
+	glUniform3fv(glGetUniformLocation(shader->programID, "objectColor"), 1, glm::value_ptr(objectColor));
+	glUniform3fv(glGetUniformLocation(shader->programID, "viewPos"), 1, glm::value_ptr(viewPos));
+
+	// 3. 객체 렌더링
+	if (drawCube) cube->Render();
+	if (drawHorn) horn->Render();
 	axis->Render();
-
-	// 사각뿔(Horn) 렌더링 (크기 0.5배 축소, X/Y축 회전 적용)
-	model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(translationX, translationY, 0.0f));
-	model = glm::scale(model, glm::vec3(0.4f, 0.4f, 0.4f));
-	model = glm::rotate(model, glm::radians(30.0f + rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(-30.0f + rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
-	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
-	if (drawHorn) {
-		horn->Render();
-	}
-
-	// 은면 제거 활성화/비활성화
-	if (cullEnabled) {
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK); // 기본적으로 뒷면을 제거
-	}
-	else {
-		glDisable(GL_CULL_FACE);
-	}
 
 	glutSwapBuffers();
 }
+
 
 
 int main(int argc, char** argv) {
@@ -433,7 +424,7 @@ int main(int argc, char** argv) {
 	glewExperimental = GL_TRUE;
 	glewInit();
 
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	cube = new Cube();
 	axis = new Axis();
 	// 사각뿔 객체 생성

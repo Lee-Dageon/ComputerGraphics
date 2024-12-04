@@ -1,17 +1,22 @@
 #version 330 core
 
-layout (location = 0) in vec3 aPos;  // 정점 위치 (x, y, z)
-layout (location = 1) in vec3 aColor; // 정점 색상 (r, g, b)
+layout (location = 0) in vec3 vPos;     // 정점 위치 (로컬 공간)
+layout (location = 1) in vec3 vNormal;  // 정점 법선 (로컬 공간)
 
-out vec3 ourColor; // fragment shader로 전달될 변수
+out vec3 FragPos;  // 프래그먼트 셰이더로 전달할 월드 좌표계의 정점 위치
+out vec3 Normal;   // 프래그먼트 셰이더로 전달할 월드 좌표계의 법선 벡터
 
-uniform mat4 trans; // 변환 행렬 (모델, 뷰, 투영 행렬)
+uniform mat4 model;      // 모델 변환 행렬
+uniform mat4 view;       // 뷰 변환 행렬
+uniform mat4 projection; // 투영 변환 행렬
 
-void main()
-{
-    // 입력 받은 위치를 변환 행렬에 적용해서 gl_Position에 전달
-    gl_Position = trans * vec4(aPos, 1.0);
+void main() {
+    // 정점의 월드 좌표 계산
+    FragPos = vec3(model * vec4(vPos, 1.0)); 
 
-    // 정점 색상을 fragment shader로 전달
-    ourColor = aColor;
+    // 월드 좌표계에서의 법선 벡터 계산
+    Normal = mat3(transpose(inverse(model))) * vNormal; 
+
+    // 화면 좌표로 변환
+    gl_Position = projection * view * vec4(FragPos, 1.0);
 }
