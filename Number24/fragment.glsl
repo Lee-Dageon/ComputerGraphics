@@ -1,27 +1,47 @@
 #version 330 core
 
-in vec3 FragPos;       // 정점 셰이더에서 전달된 월드 좌표
-in vec3 Normal;        // 정점 셰이더에서 전달된 법선 벡터
+in vec3 FragPos;
+in vec3 Normal;
 
-out vec4 FragColor;    // 최종 색상 출력
+out vec4 FragColor;
 
-uniform vec3 lightPos; // 광원의 위치
-uniform vec3 lightColor; // 광원의 색상
-uniform vec3 objectColor; // 객체의 기본 색상
+uniform vec3 lightPos;
+uniform vec3 lightDirection; 
+uniform float cutoff;
+uniform vec3 lightColor;
+uniform vec3 objectColor;
+uniform vec3 viewPos;
+uniform float shininess; // 반사광 강도 조정
+uniform float ambientStrength = 0.5; // 주변광 강도
+uniform int lightEnabled;    // 조명 상태 (1: 켜짐, 0: 꺼짐)
 
 void main() {
+    vec3 normal = normalize(Normal);
+    vec3 lightDir = normalize(lightPos - FragPos);
+    vec3 viewDir = normalize(viewPos - FragPos);
 
-    // 주변광 (Ambient Light)
-    float ambientStrength = 0.3;  // 주변광 계수
+    // 스포트라이트 각도 계산
+    float theta = dot(lightDir, normalize(-lightDirection));
+    vec3 result = vec3(0.0);
+
+    if (theta > cutoff) {
+        // Diffuse Lighting
+        float diff = max(dot(normal, lightDir), 0.0);
+        vec3 diffuse = diff * lightColor;
+
+        // Specular Lighting
+        vec3 reflectDir = reflect(-lightDir, normal);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+        vec3 specular = spec * lightColor;
+
+        result += diffuse + specular;
+    }
+
+    // 주변광 계산
     vec3 ambient = ambientStrength * lightColor;
-
-    // 산란광 (Diffuse Light)
-    vec3 normalVector = normalize(Normal); // 법선 벡터 정규화
-    vec3 lightDir = normalize(lightPos - FragPos); // 광원 방향 벡터 계산
-    float diffuseStrength = max(dot(normalVector, lightDir), 0.0); // 법선과 광원 방향의 내적 값
-    vec3 diffuse = diffuseStrength * lightColor;
+    result += ambient;
 
     // 최종 색상 계산
-    vec3 result = (ambient + diffuse) * objectColor; // 조명과 객체 색상 결합
-    FragColor = vec4(result, 1.0); // 최종 색상 출력
+    result *= objectColor;
+    FragColor = vec4(result, 1.0);
 }
