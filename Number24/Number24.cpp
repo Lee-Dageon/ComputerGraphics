@@ -434,6 +434,7 @@ bool lightEnabled = true; // true: 조명 켜짐, false: 조명 꺼짐
 void Keyboard(unsigned char key, int x, int y);
 void SpecialKeys(int key, int x, int y);
 
+
 // 타이머 콜백 함수
 
 void Timer(int value) {
@@ -482,23 +483,28 @@ void Render() {
     glUniformMatrix4fv(glGetUniformLocation(shader->programID, "view"), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(glGetUniformLocation(shader->programID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
+	// 조명 Uniform 변수 설정
+	glUniform1i(glGetUniformLocation(shader->programID, "lightEnabled"), lightEnabled ? 1 : 0);
+
 	// 2. 스포트라이트 설정
 	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 1.5f); // 빛의 위치
 	glm::vec3 lightDirection = glm::vec3(0.0f, 0.0f, -1.0f); // 빛의 방향
-	float cutoff = glm::cos(glm::radians(15.0f)); // 스포트라이트 각도 (12.5도)
+	float cutoff = glm::cos(glm::radians(5.0f)); // 스포트라이트 각도 (12.5도)
+	float outerCutoff = glm::cos(glm::radians(20.0f)); // 외부 컷오프 (17.5도)
+
+	glUniform1f(glGetUniformLocation(shader->programID, "outerCutoff"), outerCutoff);
 
 	glUniform3fv(glGetUniformLocation(shader->programID, "lightPos"), 1, glm::value_ptr(lightPos));
 	glUniform3fv(glGetUniformLocation(shader->programID, "lightDirection"), 1, glm::value_ptr(lightDirection));
 	glUniform1f(glGetUniformLocation(shader->programID, "cutoff"), cutoff);
 
 	glm::vec3 lightColor(1.0f, 1.0f, 1.0f); // 흰색 광원
-	glm::vec3 objectColor(1.0f, 0.5f, 0.31f); // 주황색 물체
+	glm::vec3 objectColor(0.0f, 1.0f, 0.0f); // 주황색 물체
 	glm::vec3 viewPos = cameraPos;
 
 	glUniform3fv(glGetUniformLocation(shader->programID, "lightColor"), 1, glm::value_ptr(lightColor));
 	glUniform3fv(glGetUniformLocation(shader->programID, "objectColor"), 1, glm::value_ptr(objectColor));
 	glUniform3fv(glGetUniformLocation(shader->programID, "viewPos"), 1, glm::value_ptr(viewPos));
-
 
     // 3. 객체 렌더링
     if (drawCube) cube->Render();
@@ -535,7 +541,6 @@ int main(int argc, char** argv) {
 	// 사각뿔 객체 생성
 	horn = new Horn();
 	shader = new Shader("vertex.glsl", "fragment.glsl");
-
 
 	glutDisplayFunc(Render);
 	glutKeyboardFunc(Keyboard);
@@ -600,6 +605,7 @@ void Keyboard(unsigned char key, int x, int y) {
 		cameraPos.y += moveSpeed;
 		glutPostRedisplay();
 	}
+
 	else if (key == 'W') { // y축 음의 방향으로 이동
 		cameraPos.y -= moveSpeed;
 		glutPostRedisplay();
@@ -609,6 +615,7 @@ void Keyboard(unsigned char key, int x, int y) {
 		cameraPos.z += moveSpeed;
 		glutPostRedisplay();
 	}
+
 	else if (key == 'D') { // z축 음의 방향으로 이동
 		cameraPos.z -= moveSpeed;
 		glutPostRedisplay();
@@ -618,6 +625,7 @@ void Keyboard(unsigned char key, int x, int y) {
 		translationZ += moveSpeed;
 		glutPostRedisplay();
 	}
+
 	else if (key == 'k') { // y축 음의 방향으로 이동
 		translationZ -= moveSpeed;
 		glutPostRedisplay();
@@ -631,7 +639,6 @@ void Keyboard(unsigned char key, int x, int y) {
 	// 카메라 위치 출력 (디버깅용)
 	std::cout << "Camera Position: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
 	std::cout << rotationX << ", " << rotationY << std::endl;
-
 
 }
 
