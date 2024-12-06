@@ -425,6 +425,10 @@ float translationY = 0.0f;
 float translationZ = 0.0f;
 float moveSpeed = 0.1f; // 이동 속도
 
+float orbitAngle = 0.0f; // 공전 각도
+float orbitSpeed = 1.0f; // 공전 속도 (1도씩 증가)
+float orbitRadius = 1.5f; // 공전 반지름
+
 bool drawCube = false; // 큐브와 사각뿔을 번갈아 그릴 상태 변수
 bool drawHorn = false; // 큐브와 사각뿔을 번갈아 그릴 상태 변수
 bool cullEnabled = false;     // 은면 제거 상태 변수
@@ -433,6 +437,20 @@ bool rotateYEnabled = false;     // 은면 제거 상태 변수
 bool lightEnabled = true; // true: 조명 켜짐, false: 조명 꺼짐
 void Keyboard(unsigned char key, int x, int y);
 void SpecialKeys(int key, int x, int y);
+
+
+// 조명 공전 궤도 그리기
+void DrawOrbit() {
+	glBegin(GL_LINE_LOOP); // 원형 궤도
+	int numSegments = 100; // 궤도를 구성하는 선분 개수
+	for (int i = 0; i < numSegments; i++) {
+		float theta = 2.0f * 3.1415926f * float(i) / float(numSegments);
+		float x = orbitRadius * cosf(theta);
+		float z = orbitRadius * sinf(theta);
+		glVertex3f(x, 0.0f, z); // Y축을 중심으로 원 그리기
+	}
+	glEnd();
+}
 
 
 // 타이머 콜백 함수
@@ -455,6 +473,13 @@ void Timer(int value) {
 		glutPostRedisplay();     // 화면을 다시 그리기 요청
 		glutTimerFunc(16, Timer, 0); // 16ms 후에 타이머 함수 재호출 (약 60 FPS)
 	}
+
+	// 조명 공전 각도 업데이트
+	orbitAngle += orbitSpeed;
+	if (orbitAngle >= 360.0f) orbitAngle -= 360.0f;
+
+	// 타이머 재설정
+	glutTimerFunc(16, Timer, 0);
 }
 
 
@@ -476,8 +501,7 @@ void Render() {
 
 	// 뷰 행렬 갱신
 	glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
-
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / HEIGHT, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / HEIGHT, 0.1f, 100.0f);
 
     glUniformMatrix4fv(glGetUniformLocation(shader->programID, "model"), 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(glGetUniformLocation(shader->programID, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -487,10 +511,14 @@ void Render() {
 	glUniform1i(glGetUniformLocation(shader->programID, "lightEnabled"), lightEnabled ? 1 : 0);
 
 	// 2. 스포트라이트 설정
+
+
 	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 1.5f); // 빛의 위치
 	glm::vec3 lightDirection = glm::vec3(0.0f, 0.0f, -1.0f); // 빛의 방향
 	float cutoff = glm::cos(glm::radians(5.0f)); // 스포트라이트 각도 (12.5도)
 	float outerCutoff = glm::cos(glm::radians(20.0f)); // 외부 컷오프 (17.5도)
+
+
 
 	glUniform1f(glGetUniformLocation(shader->programID, "outerCutoff"), outerCutoff);
 
@@ -518,7 +546,7 @@ void Render() {
 	lightCube->Render();
 
     axis->Render();
-
+	DrawOrbit(); // 궤도 그리기
     glutSwapBuffers();
 }
 
