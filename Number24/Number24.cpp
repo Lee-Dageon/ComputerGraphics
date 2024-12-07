@@ -14,6 +14,9 @@
 #define WIDTH 600
 #define HEIGHT 600
 
+float lightRadius = 1.5f; // 초기 공전 반경
+float lightMoveSpeed = 0.1f; // 조명 반경 변경 속도
+
 struct Vertex {
 	float x, y, z;
 };
@@ -85,85 +88,90 @@ private:
 
 class Cube {
 public:
-	std::vector<Vertex> vertices;
-	std::vector<GLuint> indices;
-	GLuint VAO, VBO, EBO, colorVBO;
+	GLuint VAO, VBO;
 
 	Cube() {
-		LoadOBJ("cube.obj");
 		InitBuffer();
 	}
 
-	bool LoadOBJ(const std::string& filename) {
-		std::ifstream file(filename);
-		if (!file.is_open()) {
-			std::cerr << "Failed to open OBJ file: " << filename << std::endl;
-			return false;
-		}
-
-		std::string line;
-		while (std::getline(file, line)) {
-			std::istringstream ss(line);
-			std::string prefix;
-			ss >> prefix;
-
-			if (prefix == "v") {
-				Vertex vertex;
-				ss >> vertex.x >> vertex.y >> vertex.z;
-				vertices.push_back(vertex);
-			}
-			else if (prefix == "f") {
-				GLuint index;
-				for (int i = 0; i < 3; i++) {
-					ss >> index;
-					indices.push_back(index - 1);
-				}
-			}
-		}
-
-		file.close();
-		return true;
-	}
-
 	void InitBuffer() {
+		// 정점 데이터 배열 (법선 벡터 포함)
+		float vertices[] = {
+			// Positions          // Normals
+			-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+			 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+			 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+			 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+			-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+
+			-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+			 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+			 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+			 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+			-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+
+			-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+			-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+			-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+			-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+			-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+			-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+			 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+			 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+			 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+			 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+			 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+			-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+			 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+			 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+			 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+			-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+			 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+			 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+			 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+			-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+			-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+		};
+
+		// VAO, VBO 생성 및 데이터 로드
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
-		glGenBuffers(1, &colorVBO);
 
 		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+		// 정점 위치 속성
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		GLfloat colors[] = {
-	 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // 앞면 빨강
-	 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // 뒷면 초록
-	 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // 윗면 파랑
-	 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, // 아랫면 노랑
-	 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, // 왼쪽 면 자홍색
-	 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f  // 오른쪽 면 청록색
-		};
-
-		glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+		// 법선 벡터 속성
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 		glEnableVertexAttribArray(1);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
-
 		glBindVertexArray(0);
 	}
 
-	void Render() {
+	void Render() const {
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 	}
-};		//큐브 불러오는 클래스
+
+	~Cube() {
+		glDeleteVertexArrays(1, &VAO);
+		glDeleteBuffers(1, &VBO);
+	}
+};
 
 class Horn {
 public:
@@ -411,11 +419,77 @@ public:
 	}
 };
 
+class LightOrbit {
+public:
+	GLuint VAO, VBO;
+	std::vector<glm::vec3> vertices;
+
+	LightOrbit() {
+		GenerateOrbitVertices();
+		InitBuffer();
+	}
+
+	void GenerateOrbitVertices() {
+		const int segments = 100; // 세그먼트 개수 (세밀도)
+		const float radius = lightRadius; // 공전 궤도 반경
+
+		for (int i = 0; i <= segments; i++) {
+			float angle = 2.0f * glm::pi<float>() * i / segments;
+			float x = radius * cos(angle);
+			float z = radius * sin(angle);
+			vertices.push_back(glm::vec3(x, 0.0f, z));
+		}
+	}
+
+	void InitBuffer() {
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+
+		glBindVertexArray(VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		glBindVertexArray(0);
+	}
+
+	void Render() const {
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_LINE_LOOP, 0, vertices.size());
+		glBindVertexArray(0);
+	}
+
+	void UpdateOrbitRadius(float newRadius) {
+		vertices.clear();
+		const int segments = 100;
+		for (int i = 0; i <= segments; i++) {
+			float angle = 2.0f * glm::pi<float>() * i / segments;
+			float x = newRadius * cos(angle);
+			float z = newRadius * sin(angle);
+			vertices.push_back(glm::vec3(x, 0.0f, z));
+		}
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+	}
+
+
+	~LightOrbit() {
+		if (VAO) glDeleteVertexArrays(1, &VAO);
+		if (VBO) glDeleteBuffers(1, &VBO);
+	}
+};
+
+
 Cube* cube;
 Axis* axis;
 Horn* horn;
 Shader* shader;
 LightCube* lightCube;
+LightOrbit* lightOrbit;
 
 GLfloat rotationX = 0.0f;
 GLfloat rotationY = 0.0f;
@@ -424,10 +498,6 @@ float translationX = 0.0f;
 float translationY = 0.0f;
 float translationZ = 0.0f;
 float moveSpeed = 0.1f; // 이동 속도
-
-float orbitAngle = 0.0f; // 공전 각도
-float orbitSpeed = 1.0f; // 공전 속도 (1도씩 증가)
-float orbitRadius = 1.5f; // 공전 반지름
 
 bool drawCube = false; // 큐브와 사각뿔을 번갈아 그릴 상태 변수
 bool drawHorn = false; // 큐브와 사각뿔을 번갈아 그릴 상태 변수
@@ -438,19 +508,11 @@ bool lightEnabled = true; // true: 조명 켜짐, false: 조명 꺼짐
 void Keyboard(unsigned char key, int x, int y);
 void SpecialKeys(int key, int x, int y);
 
+GLfloat lightOrbitAngle = 0.0f; // 조명의 공전 각도
+bool rotateLightEnabled = false; // 공전 여부 상태 변수
 
-// 조명 공전 궤도 그리기
-void DrawOrbit() {
-	glBegin(GL_LINE_LOOP); // 원형 궤도
-	int numSegments = 100; // 궤도를 구성하는 선분 개수
-	for (int i = 0; i < numSegments; i++) {
-		float theta = 2.0f * 3.1415926f * float(i) / float(numSegments);
-		float x = orbitRadius * cosf(theta);
-		float z = orbitRadius * sinf(theta);
-		glVertex3f(x, 0.0f, z); // Y축을 중심으로 원 그리기
-	}
-	glEnd();
-}
+
+
 
 
 // 타이머 콜백 함수
@@ -464,7 +526,7 @@ void Timer(int value) {
 		glutPostRedisplay();     // 화면을 다시 그리기 요청
 		glutTimerFunc(16, Timer, 0); // 16ms 후에 타이머 함수 재호출 (약 60 FPS)
 	}
-	
+
 	if (rotateYEnabled) {
 		rotationY += 0.8f; // rotationX를 일정하게 증가
 		if (rotationY >= 360.0f) {
@@ -474,12 +536,15 @@ void Timer(int value) {
 		glutTimerFunc(16, Timer, 0); // 16ms 후에 타이머 함수 재호출 (약 60 FPS)
 	}
 
-	// 조명 공전 각도 업데이트
-	orbitAngle += orbitSpeed;
-	if (orbitAngle >= 360.0f) orbitAngle -= 360.0f;
+	if (rotateLightEnabled) {
+		lightOrbitAngle += 1.0f; // 조명의 공전 각도를 일정하게 증가
+		if (lightOrbitAngle >= 360.0f) {
+			lightOrbitAngle -= 360.0f; // 값이 360도를 넘으면 초기화
+		}
+		glutPostRedisplay();     // 화면을 다시 그리기 요청
+		glutTimerFunc(16, Timer, 0); // 16ms 후에 타이머 함수 재호출 (약 60 FPS)
+	}
 
-	// 타이머 재설정
-	glutTimerFunc(16, Timer, 0);
 }
 
 
@@ -489,36 +554,48 @@ glm::vec3 cameraUp(0.0f, 1.0f, 0.0f); // 월드 공간의 "위쪽 방향"
 
 
 void Render() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    shader->Use();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	shader->Use();
 
-    // 1. 모델, 뷰, 투영 행렬 설정
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(translationX, translationY, translationZ));
-    model = glm::scale(model, glm::vec3(0.8f, 0.8f, 0.8f));
-    model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
+	// 1. 모델, 뷰, 투영 행렬 설정
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(translationX, translationY, translationZ));
+	model = glm::scale(model, glm::vec3(0.8f, 0.8f, 0.8f));
+	model = glm::rotate(model, glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	// 뷰 행렬 갱신
 	glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
+
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / HEIGHT, 0.1f, 100.0f);
 
-    glUniformMatrix4fv(glGetUniformLocation(shader->programID, "model"), 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(glGetUniformLocation(shader->programID, "view"), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(glGetUniformLocation(shader->programID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+	glUniformMatrix4fv(glGetUniformLocation(shader->programID, "model"), 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(glGetUniformLocation(shader->programID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(shader->programID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
 	// 조명 Uniform 변수 설정
 	glUniform1i(glGetUniformLocation(shader->programID, "lightEnabled"), lightEnabled ? 1 : 0);
 
 	// 2. 스포트라이트 설정
+		// 2. 스포트라이트 설정
+	glm::vec3 lightPos;
+	if (rotateLightEnabled) {
+		lightPos = glm::vec3(
+			lightRadius * cos(glm::radians(lightOrbitAngle)),
+			0.0f,
+			lightRadius * sin(glm::radians(lightOrbitAngle))
+		);
+	}
+	else {
+		lightPos = glm::vec3(0.0f, 0.0f, lightRadius); // 고정된 위치
+	}
 
+	// 빛의 방향을 동주기자전처럼 항상 물체를 향하게 설정
+	glm::vec3 targetPos = glm::vec3(translationX, translationY, translationZ); // 물체의 위치
+	glm::vec3 lightDirection = glm::normalize(targetPos - lightPos); // 물체를 향하는 방향 벡터 계산
 
-	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 1.5f); // 빛의 위치
-	glm::vec3 lightDirection = glm::vec3(0.0f, 0.0f, -1.0f); // 빛의 방향
 	float cutoff = glm::cos(glm::radians(5.0f)); // 스포트라이트 각도 (12.5도)
 	float outerCutoff = glm::cos(glm::radians(20.0f)); // 외부 컷오프 (17.5도)
-
-
 
 	glUniform1f(glGetUniformLocation(shader->programID, "outerCutoff"), outerCutoff);
 
@@ -534,10 +611,10 @@ void Render() {
 	glUniform3fv(glGetUniformLocation(shader->programID, "objectColor"), 1, glm::value_ptr(objectColor));
 	glUniform3fv(glGetUniformLocation(shader->programID, "viewPos"), 1, glm::value_ptr(viewPos));
 
-    // 3. 객체 렌더링
-    if (drawCube) cube->Render();
-    if (drawHorn) horn->Render();
-	
+	// 3. 객체 렌더링
+	if (drawCube) cube->Render();
+	if (drawHorn) horn->Render();
+
 	// 광원 위치에 큐브 렌더링
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, lightPos);
@@ -545,9 +622,16 @@ void Render() {
 	glUniformMatrix4fv(glGetUniformLocation(shader->programID, "model"), 1, GL_FALSE, glm::value_ptr(model));
 	lightCube->Render();
 
-    axis->Render();
-	DrawOrbit(); // 궤도 그리기
-    glutSwapBuffers();
+	glUniform1i(glGetUniformLocation(shader->programID, "lightEnabled"), 0); // 조명 비활성화
+	glm::mat4 orbitModel = glm::mat4(1.0f);
+	glUniformMatrix4fv(glGetUniformLocation(shader->programID, "model"), 1, GL_FALSE, glm::value_ptr(orbitModel));
+	glUniform3f(glGetUniformLocation(shader->programID, "objectColor"), 1.0f, 1.0f, 1.0f); // 흰색
+	lightOrbit->UpdateOrbitRadius(lightRadius); // 현재 반경으로 궤도 업데이트
+	lightOrbit->Render(); // 궤도 렌더링
+
+	axis->Render();
+
+	glutSwapBuffers();
 }
 
 
@@ -569,12 +653,11 @@ int main(int argc, char** argv) {
 	// 사각뿔 객체 생성
 	horn = new Horn();
 	shader = new Shader("vertex.glsl", "fragment.glsl");
-
+	lightOrbit = new LightOrbit();
 	glutDisplayFunc(Render);
 	glutKeyboardFunc(Keyboard);
 	glutSpecialFunc(SpecialKeys); // 방향키 입력 함수 등록
 	glEnable(GL_DEPTH_TEST);
-
 	glutMainLoop();
 	return 0;
 }
@@ -611,15 +694,20 @@ void Keyboard(unsigned char key, int x, int y) {
 		}
 	}
 
-	else if (key == 'z') {// 와이어프레임 모드
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else if (key == 'z') {
+		if (lightRadius > 0.5f) { // 최소 반경 제한
+			lightRadius -= lightMoveSpeed; // 반경 줄이기
+			std::cout << "Light radius decreased: " << lightRadius << std::endl;
+		}
+		glutPostRedisplay();
+	}
+	else if (key == 'Z') {
+		lightRadius += lightMoveSpeed; // 반경 늘리기
+		std::cout << "Light radius increased: " << lightRadius << std::endl;
 		glutPostRedisplay();
 	}
 
-	else if (key == 'Z') {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glutPostRedisplay();
-	}
+
 
 	else if (key == 'a') { // x축 양의 방향으로 이동
 		cameraPos.x += moveSpeed;
@@ -664,6 +752,13 @@ void Keyboard(unsigned char key, int x, int y) {
 		glutPostRedisplay(); // 화면 다시 그리기 요청
 	}
 
+	else if (key == 'r') { // 'r' 키로 조명의 공전 시작/중지
+		rotateLightEnabled = !rotateLightEnabled;
+		if (rotateLightEnabled) {
+			glutTimerFunc(0, Timer, 0); // 타이머 시작
+		}
+	}
+
 	// 카메라 위치 출력 (디버깅용)
 	std::cout << "Camera Position: (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ")" << std::endl;
 	std::cout << rotationX << ", " << rotationY << std::endl;
@@ -687,6 +782,3 @@ void SpecialKeys(int key, int x, int y) {
 	}
 	glutPostRedisplay(); // 화면을 다시 그리기 요청
 }
-
-
-
